@@ -1,3 +1,3 @@
-./model/share_trip_grpc.pb.go
-./model/share_trip.pb.go
+/model/share_trip_grpc.pb.go
+/model/share_trip.pb.go
 go.sum
