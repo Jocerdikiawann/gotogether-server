@@ -8,12 +8,19 @@ import (
 
 	"github.com/Jocerdikiawann/server_share_trip/model"
 	"github.com/Jocerdikiawann/server_share_trip/services"
+	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
 
 var (
 	port = flag.Int("port", 8888, "server port")
 )
+
+func init() {
+	if err := godotenv.Load(); err != nil {
+		panic("failed load .env")
+	}
+}
 
 func main() {
 	flag.Parse()
