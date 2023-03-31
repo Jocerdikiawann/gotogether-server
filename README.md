@@ -2,7 +2,7 @@
 
 Installation :
 ```bash
-docker compose up
+docker compose up -d
 ```
 then open the terminal, enter into docker with the command:
 ```bash
