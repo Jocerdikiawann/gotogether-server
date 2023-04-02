@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package app.sharetrip.auth;
+
+option go_package = "github.com/Jocerdikiawann/server_share_trip/model/proto/auth";
+option java_multiple_files = true;
+
+import "model/proto/auth/authtypes.proto";
+
+service Auth {
+  rpc Authentication(UserRequest) returns (AuthResponse) {}
+}

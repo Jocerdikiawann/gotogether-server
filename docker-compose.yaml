@@ -1,22 +1,26 @@
 version: '3.9'
 
 services:
-  cassandra:
-    image: bitnami/cassandra:latest
+  mongodb:
+    container_name: mongodb
+    image: mongo:latest
     restart: always
     environment:
-      - CASSANDRA_TRANSPORT_PORT_NUMBER=${TPN}
-      - CASSANDRA_CQL_PORT_NUMBER=${CQL_PORT}
-      - CASSANDRA_USER=${CASSANDRA_USER}
-      - CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD}
-      - CASSANDRA_CLUSTER_NAME=${CASSANDRA_CLUSTER_NAME}
-    volumes:
-      - data:/data/db
-    expose:
-      - ${CQL_PORT}
-      - ${TPN}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
     ports:
-      - ${CQL_PORT}:${CQL_PORT}
+      - ${MONGO_PORT}:${MONGO_PORT}
+    networks:
+      - service-networks
+    volumes:
+      - "mongo-data:/data/db"
+    expose:
+      - ${MONGO_PORT}
+    command: mongod
+networks:
+  service-networks:
+    driver: bridge
+
 volumes:
-  data:
-    driver: local
+  mongo-data:
+    driver: "local"

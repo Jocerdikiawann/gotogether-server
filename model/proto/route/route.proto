@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package app.sharetrip.route;
+
+option go_package = "github.com/Jocerdikiawann/server_share_trip/model/proto/route";
+option java_multiple_files = true;
+
+import "model/proto/route/routetypes.proto";
+
+service Route {
+  rpc GetLocation(RouteRequest) returns (stream LocationResponse) {}
+  rpc GetDestination(RouteRequest) returns (DestintationAndPolylineResponse) {}
+  rpc SendLocation(stream LocationRequest) returns (stream LocationResponse) {}
+  rpc SendDestinationAndPolyline(DestintationAndPolylineRequest)
+      returns (DestintationAndPolylineResponse) {}
+}
