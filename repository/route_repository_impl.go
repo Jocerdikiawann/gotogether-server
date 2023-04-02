@@ -25,14 +25,20 @@ func (repo *RouteRepositoryImpl) GetLocation(context context.Context, id string)
 		"_id": id,
 	}
 
-	result := repo.db.Collection("route").FindOne(context, filter)
+	result := repo.db.Collection("location").FindOne(context, filter)
 
 	err = result.Decode(&location)
 	return
 }
 
-func (repo *RouteRepositoryImpl) GetDestinationAndPolyline(context context.Context, id string) (entity.Destination, error) {
-	return entity.Destination{}, nil
+func (repo *RouteRepositoryImpl) GetDestinationAndPolyline(context context.Context, id string) (destination entity.Destination, err error) {
+	filter := bson.M{
+		"_id": id,
+	}
+
+	result := repo.db.Collection("destination").FindOne(context, filter)
+	err = result.Decode(&destination)
+	return
 }
 
 func (repo *RouteRepositoryImpl) SendLocation(context context.Context, request request.LocationRequest) error {
