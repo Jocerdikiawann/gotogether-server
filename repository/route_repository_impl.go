@@ -7,7 +7,9 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type RouteRepositoryImpl struct {
@@ -20,14 +22,13 @@ func NewRouteRepository(db *mongo.Database) design.RouteRepository {
 	}
 }
 
-func (repo *RouteRepositoryImpl) GetLocation(context context.Context, id string) (location entity.Location, err error) {
-	filter := bson.M{
-		"_id": id,
+func (repo *RouteRepositoryImpl) WatchLocation(id string) (stream *mongo.ChangeStream, err error) {
+	pipeline := mongo.Pipeline{
+		bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: id}}}},
 	}
 
-	result := repo.db.Collection("location").FindOne(context, filter)
-
-	err = result.Decode(&location)
+	options := options.ChangeStream().SetFullDocument(options.UpdateLookup)
+	stream, err = repo.db.Collection("location").Watch(context.Background(), pipeline, options)
 	return
 }
 
@@ -41,10 +42,15 @@ func (repo *RouteRepositoryImpl) GetDestinationAndPolyline(context context.Conte
 	return
 }
 
-func (repo *RouteRepositoryImpl) SendLocation(context context.Context, request request.LocationRequest) error {
-	return nil
+func (repo *RouteRepositoryImpl) SendLocation(context context.Context, request request.LocationRequest) (id string, err error) {
+	result, err := repo.db.Collection("location").InsertOne(context, request)
+
+	id = result.InsertedID.(primitive.ObjectID).Hex()
+	return
 }
 
-func (repo *RouteRepositoryImpl) SendDestinationAndPolyline(context context.Context, request request.DestinationAndPolylineRequest) error {
-	return nil
+func (repo *RouteRepositoryImpl) SendDestinationAndPolyline(context context.Context, request request.DestinationAndPolylineRequest) (id string, err error) {
+	result, err := repo.db.Collection("destination").InsertOne(context, request)
+	id = result.InsertedID.(primitive.ObjectID).Hex()
+	return
 }

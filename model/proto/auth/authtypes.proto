@@ -6,20 +6,14 @@ option go_package = "github.com/Jocerdikiawann/server_share_trip/model/proto/aut
 option java_multiple_files = true;
 
 message UserRequest {
-  string id_account = 1;
+  string googleId = 1;
   string email = 2;
   optional string name = 3;
 }
 
 message UserResponse {
   string id = 1;
-  string id_account = 2;
+  string googleId = 2;
   string email = 3;
   optional string name = 4;
-}
-
-message AuthResponse {
-  bool success = 1;
-  string message = 2;
-  optional UserResponse data = 3;
 }

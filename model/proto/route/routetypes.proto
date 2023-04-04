@@ -19,16 +19,14 @@ message DestintationAndPolylineRequest {
 }
 
 message LocationResponse {
-  bool success = 1;
-  string message = 2;
-  optional Point point = 3;
+  optional string id = 1;
+  optional Point point = 2;
 }
 
 message DestintationAndPolylineResponse {
-  bool success = 1;
-  string message = 2;
-  optional RoutePolyline data = 3;
-  optional Point destination = 4;
+  string id = 1;
+  optional RoutePolyline data = 2;
+  optional Point destination = 3;
 }
 
 message Point {

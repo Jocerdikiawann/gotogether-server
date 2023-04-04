@@ -1,6 +1,7 @@
 package request
 
 type LocationRequest struct {
-	GoogleId string
-	Location float64
+	GoogleId  string
+	Latitude  float64
+	Longitude float64
 }
