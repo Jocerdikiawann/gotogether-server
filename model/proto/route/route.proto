@@ -5,8 +5,6 @@ package app.sharetrip.route;
 option go_package = "github.com/Jocerdikiawann/server_share_trip/model/proto/route";
 option java_multiple_files = true;
 
-import "model/proto/route/routetypes.proto";
-
 service Route {
   rpc WatchLocation(RouteRequest) returns (stream LocationResponse) {}
   rpc GetDestination(RouteRequest) returns (DestintationAndPolylineResponse) {}
@@ -14,3 +12,34 @@ service Route {
   rpc SendDestinationAndPolyline(DestintationAndPolylineRequest)
       returns (DestintationAndPolylineResponse) {}
 }
+
+message RouteRequest { string id = 1; }
+
+message LocationRequest {
+  string googleId = 1;
+  Point point = 2;
+}
+
+message DestintationAndPolylineRequest {
+  string googleId = 1;
+  Point destination = 2;
+  RoutePolyline polyline = 3;
+}
+
+message LocationResponse {
+  optional string id = 1;
+  optional Point point = 2;
+}
+
+message DestintationAndPolylineResponse {
+  string id = 1;
+  optional RoutePolyline data = 2;
+  optional Point destination = 3;
+}
+
+message Point {
+  double latitude = 1;
+  double longitude = 2;
+}
+
+message RoutePolyline { repeated Point points = 1; }

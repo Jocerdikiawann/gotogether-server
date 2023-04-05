@@ -12,16 +12,21 @@ import (
 )
 
 func Connect(usernameDb, passwordDb, nameDb, hostDb, portDb string) *mongo.Database {
-	uri := fmt.Sprintf("mongodb://%s:%v", hostDb, portDb)
-	credential := options.Credential{
-		Username: usernameDb,
-		Password: passwordDb,
-	}
+	uri := fmt.Sprintf("mongodb://%v:%v", hostDb, portDb)
+	// mongodb: //localhost:27017/?replicaSet=myReplicaSet&directConnection=true
+	// credential := options.Credential{
+	// 	Username: usernameDb,
+	// 	Password: passwordDb,
+	// }
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	clientOptions := options.Client().ApplyURI(uri).SetAuth(credential).SetMaxPoolSize(50)
+	clientOptions := options.Client().ApplyURI(uri).
+		SetMaxPoolSize(50).
+		SetReplicaSet("myReplicaSet").
+		SetDirect(true)
+		// .SetAuth(credential)
 	client, err := mongo.NewClient(clientOptions)
 	utils.CheckError(err)
 

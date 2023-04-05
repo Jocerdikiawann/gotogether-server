@@ -1,3 +1,4 @@
 model/proto/*/*.pb.go
 go.sum
 .env
+keyfile.key

@@ -128,5 +128,3 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 	}
 	return
 }
-
-func (s *RouteServiceServer) mustEmbedUnimplementedRouteServer() {}
