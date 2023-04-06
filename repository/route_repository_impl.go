@@ -22,10 +22,8 @@ func NewRouteRepository(db *mongo.Database) design.RouteRepository {
 	}
 }
 
-func (repo *RouteRepositoryImpl) WatchLocation(id string) (stream *mongo.ChangeStream, err error) {
-	pipeline := mongo.Pipeline{
-		bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: id}}}},
-	}
+func (repo *RouteRepositoryImpl) WatchLocation() (stream *mongo.ChangeStream, err error) {
+	pipeline := mongo.Pipeline{}
 
 	options := options.ChangeStream().SetFullDocument(options.UpdateLookup)
 	stream, err = repo.db.Collection("location").Watch(context.Background(), pipeline, options)

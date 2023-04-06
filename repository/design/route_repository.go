@@ -9,7 +9,7 @@ import (
 )
 
 type RouteRepository interface {
-	WatchLocation(id string) (*mongo.ChangeStream, error)
+	WatchLocation() (*mongo.ChangeStream, error)
 	GetDestinationAndPolyline(context context.Context, id string) (entity.Destination, error)
 	SendLocation(context context.Context, request request.LocationRequest) (string, error)
 	SendDestinationAndPolyline(context context.Context, request request.DestinationAndPolylineRequest) (string, error)

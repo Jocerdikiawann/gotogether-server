@@ -3,11 +3,15 @@ package services
 import (
 	"context"
 	"io"
+	"sync"
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/proto/route"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
+	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -18,31 +22,54 @@ type RouteServiceServer struct {
 }
 
 func (s *RouteServiceServer) WatchLocation(input *route.RouteRequest, stream route.Route_WatchLocationServer) error {
-	cursor, err := s.Repo.WatchLocation(input.GetId())
+	cursor, err := s.Repo.WatchLocation()
+
+	waitGroup := sync.WaitGroup{}
+	dataChan := make(chan *route.LocationResponse)
 
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to watch location: %v", err)
 	}
 
-	defer cursor.Close(context.Background())
+	routineCtx, cancelFn := context.WithCancel(context.Background())
+	defer cancelFn()
 
-	for cursor.Next(context.Background()) {
-		var data entity.Destination
-		if err := cursor.Decode(&data); err != nil {
-			return status.Errorf(codes.InvalidArgument, "failed decode data: %v", err)
+	waitGroup.Add(1)
+
+	go func() {
+		defer cursor.Close(routineCtx)
+		defer waitGroup.Done()
+
+		for cursor.Next(routineCtx) {
+			var data bson.M
+			if err := cursor.Decode(&data); err != nil {
+				panic(err)
+			}
+			fullDocument, _ := data["fullDocument"].(bson.M)
+			id := fullDocument["_id"].(primitive.ObjectID).Hex()
+			latitude := fullDocument["latitude"].(float64)
+			longitude := fullDocument["longitude"].(float64)
+			dataChan <- &route.LocationResponse{
+				Id: &id,
+				Point: &route.Point{
+					Latitude:  latitude,
+					Longitude: longitude,
+				},
+			}
 		}
-		err := stream.Send(&route.LocationResponse{
-			Point: &route.Point{
-				Latitude:  data.DestinationLatLng.Latitude,
-				Longitude: data.DestinationLatLng.Longitude,
-			},
-		})
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to send data: %v", err)
+	}()
+
+	for {
+		select {
+		case <-stream.Context().Done():
+			waitGroup.Wait()
+			return nil
+		case data := <-dataChan:
+			if err := stream.Send(data); err != nil {
+				utils.CheckError(err)
+			}
 		}
 	}
-
-	return err
 }
 
 func (s *RouteServiceServer) GetDestination(context context.Context, request *route.RouteRequest) (data *route.DestintationAndPolylineResponse, err error) {
@@ -85,15 +112,17 @@ func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer)
 		}
 
 		id, err := s.Repo.SendLocation(stream.Context(), request.LocationRequest{
-			GoogleId:  in.GetGoogleId(),
+			GoogleId:  "",
 			Latitude:  in.GetPoint().Latitude,
 			Longitude: in.GetPoint().Longitude,
 		})
 
+		idPointer := &id
+
 		err = stream.Send(
 			&route.LocationResponse{
 				Point: in.GetPoint(),
-				Id:    &id,
+				Id:    idPointer,
 			},
 		)
 
