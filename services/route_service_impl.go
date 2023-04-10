@@ -42,7 +42,6 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 		defer waitGroup.Done()
 
 		for cursor.Next(routineCtx) {
-			// KODE KU TIDAK BERJALAN DI BAGIAN INI
 			var data bson.M
 			if err := cursor.Decode(&data); err != nil {
 				utils.CheckError(err)
