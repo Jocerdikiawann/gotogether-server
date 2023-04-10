@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 
@@ -21,8 +22,8 @@ type RouteServiceServer struct {
 	route.UnimplementedRouteServer
 }
 
-func (s *RouteServiceServer) WatchLocation(input *route.RouteRequest, stream route.Route_WatchLocationServer) error {
-	cursor, err := s.Repo.WatchLocation()
+func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream route.Route_WatchLocationServer) error {
+	cursor, err := s.Repo.WatchLocation(input.GetGoogleId())
 
 	waitGroup := sync.WaitGroup{}
 	dataChan := make(chan *route.LocationResponse)
@@ -41,16 +42,19 @@ func (s *RouteServiceServer) WatchLocation(input *route.RouteRequest, stream rou
 		defer waitGroup.Done()
 
 		for cursor.Next(routineCtx) {
+			// KODE KU TIDAK BERJALAN DI BAGIAN INI
 			var data bson.M
 			if err := cursor.Decode(&data); err != nil {
-				panic(err)
+				utils.CheckError(err)
 			}
+			fmt.Println("Document is here2", data)
 			fullDocument, _ := data["fullDocument"].(bson.M)
 			id := fullDocument["_id"].(primitive.ObjectID).Hex()
-			latitude := fullDocument["latitude"].(float64)
-			longitude := fullDocument["longitude"].(float64)
+			point := fullDocument["point"].(bson.M)
+			latitude := point["latitude"].(float64)
+			longitude := point["longitude"].(float64)
 			dataChan <- &route.LocationResponse{
-				Id: &id,
+				Id: id,
 				Point: &route.Point{
 					Latitude:  latitude,
 					Longitude: longitude,
@@ -62,6 +66,7 @@ func (s *RouteServiceServer) WatchLocation(input *route.RouteRequest, stream rou
 	for {
 		select {
 		case <-stream.Context().Done():
+			defer close(dataChan)
 			waitGroup.Wait()
 			return nil
 		case data := <-dataChan:
@@ -81,19 +86,14 @@ func (s *RouteServiceServer) GetDestination(context context.Context, request *ro
 
 	points := make([]*route.Point, 0, len(result.Polyline))
 
-	defer func() {
-		for i := range points {
-			points[i] = nil
-		}
-	}()
-
 	for _, p := range result.Polyline {
 		points = append(points, &route.Point{Latitude: p.Latitude, Longitude: p.Longitude})
 	}
 
 	data = &route.DestintationAndPolylineResponse{
-		Data:        &route.RoutePolyline{Points: points},
-		Destination: &route.Point{Latitude: result.DestinationLatLng.Latitude, Longitude: result.DestinationLatLng.Longitude},
+		Id:            result.Id.Hex(),
+		RoutePolyline: &route.RoutePolyline{Points: points},
+		Destination:   &route.Point{Latitude: result.DestinationLatLng.Latitude, Longitude: result.DestinationLatLng.Longitude},
 	}
 
 	return
@@ -112,17 +112,17 @@ func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer)
 		}
 
 		id, err := s.Repo.SendLocation(stream.Context(), request.LocationRequest{
-			GoogleId:  "",
-			Latitude:  in.GetPoint().Latitude,
-			Longitude: in.GetPoint().Longitude,
+			GoogleId: in.GetGoogleId(),
+			Point: request.Point{
+				Latitude:  in.GetPoint().Latitude,
+				Longitude: in.GetPoint().Longitude,
+			},
 		})
-
-		idPointer := &id
 
 		err = stream.Send(
 			&route.LocationResponse{
 				Point: in.GetPoint(),
-				Id:    idPointer,
+				Id:    id,
 			},
 		)
 
@@ -131,9 +131,9 @@ func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer)
 }
 
 func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context, req *route.DestintationAndPolylineRequest) (data *route.DestintationAndPolylineResponse, err error) {
-	points := make([]entity.Point, 0, len(req.GetPolyline().Points))
+	points := make([]entity.Point, 0, len(req.GetRoutePolyline().Points))
 
-	for _, p := range req.GetPolyline().GetPoints() {
+	for _, p := range req.GetRoutePolyline().GetPoints() {
 		points = append(points, entity.Point{Latitude: p.GetLatitude(), Longitude: p.GetLongitude()})
 	}
 
@@ -147,13 +147,13 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 	})
 
 	if err != nil {
-		err = status.Errorf(codes.Internal, "internal error : %v", err)
+		return &route.DestintationAndPolylineResponse{}, status.Errorf(codes.Internal, "internal error : %v", err)
 	}
 
 	data = &route.DestintationAndPolylineResponse{
-		Data:        req.GetPolyline(),
-		Destination: req.GetDestination(),
-		Id:          result,
+		Destination:   req.GetDestination(),
+		Id:            result,
+		RoutePolyline: req.GetRoutePolyline(),
 	}
 	return
 }

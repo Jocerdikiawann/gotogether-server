@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
@@ -22,21 +23,33 @@ func NewRouteRepository(db *mongo.Database) design.RouteRepository {
 	}
 }
 
-func (repo *RouteRepositoryImpl) WatchLocation() (stream *mongo.ChangeStream, err error) {
-	pipeline := mongo.Pipeline{}
+func (repo *RouteRepositoryImpl) WatchLocation(id string) (stream *mongo.ChangeStream, err error) {
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{
+				Key: "$match", Value: bson.D{
+					{Key: "operationType", Value: "insert"},
+					{Key: "fullDocument.googleid", Value: bson.D{
+						{Key: "$eq", Value: id},
+					}},
+				},
+			},
+		},
+	}
 
-	options := options.ChangeStream().SetFullDocument(options.UpdateLookup)
+	options := options.ChangeStream().SetFullDocument(options.Default)
 	stream, err = repo.db.Collection("location").Watch(context.Background(), pipeline, options)
 	return
 }
 
 func (repo *RouteRepositoryImpl) GetDestinationAndPolyline(context context.Context, id string) (destination entity.Destination, err error) {
+	objId, err := primitive.ObjectIDFromHex(id)
 	filter := bson.M{
-		"_id": id,
+		"_id": objId,
 	}
 
-	result := repo.db.Collection("destination").FindOne(context, filter)
-	err = result.Decode(&destination)
+	err = repo.db.Collection("destination").FindOne(context, filter).Decode(&destination)
+	fmt.Println(destination)
 	return
 }
 

@@ -6,7 +6,7 @@ option go_package = "github.com/Jocerdikiawann/server_share_trip/model/proto/rou
 option java_multiple_files = true;
 
 service Route {
-  rpc WatchLocation(RouteRequest) returns (stream LocationResponse) {}
+  rpc WatchLocation(WatchRequest) returns (stream LocationResponse) {}
   rpc GetDestination(RouteRequest) returns (DestintationAndPolylineResponse) {}
   rpc SendLocation(stream LocationRequest) returns (stream LocationResponse) {}
   rpc SendDestinationAndPolyline(DestintationAndPolylineRequest)
@@ -14,6 +14,8 @@ service Route {
 }
 
 message RouteRequest { string id = 1; }
+
+message WatchRequest { string googleId = 1; }
 
 message LocationRequest {
   string googleId = 1;
@@ -23,18 +25,18 @@ message LocationRequest {
 message DestintationAndPolylineRequest {
   string googleId = 1;
   Point destination = 2;
-  RoutePolyline polyline = 3;
+  RoutePolyline routePolyline = 3;
 }
 
 message LocationResponse {
-  optional string id = 1;
-  optional Point point = 2;
+  string id = 1;
+  Point point = 2;
 }
 
 message DestintationAndPolylineResponse {
   string id = 1;
-  optional RoutePolyline data = 2;
-  optional Point destination = 3;
+  RoutePolyline routePolyline = 2;
+  Point destination = 3;
 }
 
 message Point {
