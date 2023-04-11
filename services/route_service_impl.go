@@ -9,6 +9,7 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/proto/route"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
+	"github.com/Jocerdikiawann/server_share_trip/repository"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -20,6 +21,12 @@ import (
 type RouteServiceServer struct {
 	Repo design.RouteRepository
 	route.UnimplementedRouteServer
+}
+
+func NewRouteService(repo *repository.RouteRepositoryImpl) *RouteServiceServer {
+	return &RouteServiceServer{
+		Repo: repo,
+	}
 }
 
 func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream route.Route_WatchLocationServer) error {

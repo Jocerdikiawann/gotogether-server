@@ -6,7 +6,6 @@ import (
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
-	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +16,7 @@ type RouteRepositoryImpl struct {
 	db *mongo.Database
 }
 
-func NewRouteRepository(db *mongo.Database) design.RouteRepository {
+func NewRouteRepository(db *mongo.Database) *RouteRepositoryImpl {
 	return &RouteRepositoryImpl{
 		db: db,
 	}

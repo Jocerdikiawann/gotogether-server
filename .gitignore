@@ -2,3 +2,4 @@ model/proto/*/*.pb.go
 go.sum
 .env
 keyfile.key
+di/wire_gen.go

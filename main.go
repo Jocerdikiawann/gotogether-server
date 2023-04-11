@@ -7,9 +7,8 @@ import (
 	"os"
 
 	"github.com/Jocerdikiawann/server_share_trip/config"
+	"github.com/Jocerdikiawann/server_share_trip/di"
 	"github.com/Jocerdikiawann/server_share_trip/model/proto/route"
-	"github.com/Jocerdikiawann/server_share_trip/repository"
-	services "github.com/Jocerdikiawann/server_share_trip/services"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
@@ -30,19 +29,18 @@ func main() {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", *port))
 	utils.CheckError(err)
 
-	nameDB := os.Getenv("MONGO_DB_NAME")
-	portDB := os.Getenv("MONGO_PORT")
-	usernameDB := os.Getenv("MONGO_USERNAME")
-	passwordDB := os.Getenv("MONGO_PASSWORD")
-	hostDB := os.Getenv("MONGO_HOST")
-
-	db := config.Connect(usernameDB, passwordDB, nameDB, hostDB, portDB)
-
 	serv := grpc.NewServer()
-	routeRepo := repository.NewRouteRepository(db)
-	routeService := &services.RouteServiceServer{
-		Repo: routeRepo,
+
+	conf := &config.Config{
+		Username: os.Getenv("MONGO_USERNAME"),
+		Password: os.Getenv("MONGO_PASSWORD"),
+		Host:     os.Getenv("MONGO_HOST"),
+		Port:     os.Getenv("MONGO_PORT"),
+		NameDb:   os.Getenv("MONGO_DB_NAME"),
 	}
+
+	routeService := di.InitializedServiceServer(conf)
+
 	route.RegisterRouteServer(serv, routeService)
 
 	fmt.Printf("server listening on : %v", listener.Addr())

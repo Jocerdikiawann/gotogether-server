@@ -3,6 +3,7 @@ module github.com/Jocerdikiawann/server_share_trip
 go 1.18
 
 require (
+	github.com/google/wire v0.5.0
 	github.com/joho/godotenv v1.5.1
 	go.mongodb.org/mongo-driver v1.11.3
 	google.golang.org/grpc v1.54.0

@@ -11,8 +11,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-func Connect(usernameDb, passwordDb, nameDb, hostDb, portDb string) *mongo.Database {
-	uri := fmt.Sprintf("mongodb://%v:%v", hostDb, portDb)
+type Config struct {
+	Username string
+	Password string
+	Host     string
+	Port     string
+	NameDb   string
+}
+
+func Connect(config *Config) *mongo.Database {
+	uri := fmt.Sprintf("mongodb://%v:%v", config.Host, config.Port)
 	// mongodb: //localhost:27017/?replicaSet=myReplicaSet&directConnection=true
 	// credential := options.Credential{
 	// 	Username: usernameDb,
@@ -33,10 +41,10 @@ func Connect(usernameDb, passwordDb, nameDb, hostDb, portDb string) *mongo.Datab
 	err = client.Connect(ctx)
 	utils.CheckError(err)
 
-	err = client.Ping(ctx, readpref.Primary())
+	err = client.Ping(ctx, readpref.PrimaryPreferred())
 	utils.CheckError(err)
 
-	db := client.Database(nameDb)
+	db := client.Database(config.NameDb)
 
 	return db
 }
