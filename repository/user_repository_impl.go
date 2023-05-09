@@ -5,7 +5,6 @@ import (
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
-	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -14,7 +13,7 @@ type AuthRepositoryImpl struct {
 	db *mongo.Database
 }
 
-func NewUserRepository(db *mongo.Database) design.AuthRepository {
+func NewUserRepository(db *mongo.Database) *AuthRepositoryImpl {
 	return &AuthRepositoryImpl{
 		db: db,
 	}

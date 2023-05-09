@@ -1,6 +1,3 @@
-//go:build wireinject
-// +build wireinject
-
 package di
 
 import (
@@ -16,11 +13,21 @@ var routeSet = wire.NewSet(
 	wire.Bind(new(design.RouteRepository), new(*repository.RouteRepositoryImpl)),
 )
 
-func InitializedServiceServer(
+var authSet = wire.NewSet(
+	repository.NewUserRepository,
+	wire.Bind(new(design.AuthRepository), new(*repository.AuthRepositoryImpl)),
+)
+
+func InitializedRouteServiceServer(
 	conf *config.Config,
 ) *services.RouteServiceServer {
 	wire.Build(
 		config.Connect, routeSet, services.NewRouteService,
 	)
+	return nil
+}
+
+func InitializedAuthServiceServer() *services.UserServiceServer {
+	
 	return nil
 }

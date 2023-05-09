@@ -2,14 +2,12 @@ package services
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/proto/route"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
-	"github.com/Jocerdikiawann/server_share_trip/repository"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"go.mongodb.org/mongo-driver/bson"
@@ -23,7 +21,7 @@ type RouteServiceServer struct {
 	route.UnimplementedRouteServer
 }
 
-func NewRouteService(repo *repository.RouteRepositoryImpl) *RouteServiceServer {
+func NewRouteService(repo design.RouteRepository) *RouteServiceServer {
 	return &RouteServiceServer{
 		Repo: repo,
 	}
@@ -53,7 +51,6 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 			if err := cursor.Decode(&data); err != nil {
 				utils.CheckError(err)
 			}
-			fmt.Println("Document is here2", data)
 			fullDocument, _ := data["fullDocument"].(bson.M)
 			id := fullDocument["_id"].(primitive.ObjectID).Hex()
 			point := fullDocument["point"].(bson.M)
