@@ -2,5 +2,10 @@
 
 Installation :
 ```bash
-docker compose up -d
+make gen
+```
+
+Run :
+```bash
+make build_and_run
 ```
