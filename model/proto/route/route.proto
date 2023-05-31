@@ -29,11 +29,25 @@ message DestintationAndPolylineRequest {
 }
 
 message LocationResponse {
+  int32 statusCode = 1;
+  bool success = 2;
+  string message = 3;
+  optional LocationType data = 4;
+}
+
+message LocationType {
   string id = 1;
   Point point = 2;
 }
 
 message DestintationAndPolylineResponse {
+  int32 statusCode = 1;
+  bool success = 2;
+  string message = 3;
+  optional DestintationAndPolylineType data = 4;
+}
+
+message DestintationAndPolylineType {
   string id = 1;
   RoutePolyline routePolyline = 2;
   Point destination = 3;

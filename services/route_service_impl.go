@@ -57,10 +57,15 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 			latitude := point["latitude"].(float64)
 			longitude := point["longitude"].(float64)
 			dataChan <- &route.LocationResponse{
-				Id: id,
-				Point: &route.Point{
-					Latitude:  latitude,
-					Longitude: longitude,
+				StatusCode: int32(codes.OK),
+				Success:    true,
+				Message:    "success get data",
+				Data: &route.LocationType{
+					Id: id,
+					Point: &route.Point{
+						Latitude:  latitude,
+						Longitude: longitude,
+					},
 				},
 			}
 		}
@@ -80,11 +85,11 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 	}
 }
 
-func (s *RouteServiceServer) GetDestination(context context.Context, request *route.RouteRequest) (data *route.DestintationAndPolylineResponse, err error) {
+func (s *RouteServiceServer) GetDestination(context context.Context, request *route.RouteRequest) (*route.DestintationAndPolylineResponse, error) {
 	result, err := s.Repo.GetDestinationAndPolyline(context, request.GetId())
 
 	if err != nil {
-		err = status.Errorf(codes.Internal, "internal error: %v", err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	points := make([]*route.Point, 0, len(result.Polyline))
@@ -93,13 +98,16 @@ func (s *RouteServiceServer) GetDestination(context context.Context, request *ro
 		points = append(points, &route.Point{Latitude: p.Latitude, Longitude: p.Longitude})
 	}
 
-	data = &route.DestintationAndPolylineResponse{
-		Id:            result.Id.Hex(),
-		RoutePolyline: &route.RoutePolyline{Points: points},
-		Destination:   &route.Point{Latitude: result.DestinationLatLng.Latitude, Longitude: result.DestinationLatLng.Longitude},
-	}
-
-	return
+	return &route.DestintationAndPolylineResponse{
+		StatusCode: int32(codes.OK),
+		Success:    true,
+		Message:    "success get data.",
+		Data: &route.DestintationAndPolylineType{
+			Id:            result.Id.Hex(),
+			RoutePolyline: &route.RoutePolyline{Points: points},
+			Destination:   &route.Point{Latitude: result.DestinationLatLng.Latitude, Longitude: result.DestinationLatLng.Longitude},
+		},
+	}, nil
 }
 
 func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer) error {
@@ -107,14 +115,14 @@ func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer)
 		in, err := stream.Recv()
 
 		if err != nil {
-			return status.Errorf(codes.Internal, "failed")
+			return status.Error(codes.Internal, err.Error())
 		}
 
 		if err == io.EOF {
-			return nil
+			break
 		}
 
-		id, err := s.Repo.SendLocation(stream.Context(), request.LocationRequest{
+		id, errData := s.Repo.SendLocation(stream.Context(), request.LocationRequest{
 			GoogleId: in.GetGoogleId(),
 			Point: request.Point{
 				Latitude:  in.GetPoint().Latitude,
@@ -122,18 +130,30 @@ func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer)
 			},
 		})
 
-		err = stream.Send(
+		if errData != nil {
+			return errData
+		}
+
+		errSending := stream.Send(
 			&route.LocationResponse{
-				Point: in.GetPoint(),
-				Id:    id,
+				StatusCode: int32(codes.OK),
+				Success:    true,
+				Message:    "success get data.",
+				Data: &route.LocationType{
+					Point: in.GetPoint(),
+					Id:    id,
+				},
 			},
 		)
 
-		return nil
+		if errSending != nil {
+			return status.Error(codes.Internal, errSending.Error())
+		}
 	}
+	return nil
 }
 
-func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context, req *route.DestintationAndPolylineRequest) (data *route.DestintationAndPolylineResponse, err error) {
+func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context, req *route.DestintationAndPolylineRequest) (*route.DestintationAndPolylineResponse, error) {
 	points := make([]entity.Point, 0, len(req.GetRoutePolyline().Points))
 
 	for _, p := range req.GetRoutePolyline().GetPoints() {
@@ -150,13 +170,17 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 	})
 
 	if err != nil {
-		return &route.DestintationAndPolylineResponse{}, status.Errorf(codes.Internal, "internal error : %v", err)
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	data = &route.DestintationAndPolylineResponse{
-		Destination:   req.GetDestination(),
-		Id:            result,
-		RoutePolyline: req.GetRoutePolyline(),
-	}
-	return
+	return &route.DestintationAndPolylineResponse{
+		StatusCode: int32(codes.OK),
+		Success:    true,
+		Message:    "success get data.",
+		Data: &route.DestintationAndPolylineType{
+			Destination:   req.GetDestination(),
+			Id:            result,
+			RoutePolyline: req.GetRoutePolyline(),
+		},
+	}, nil
 }

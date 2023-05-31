@@ -6,37 +6,50 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/model/proto/auth"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
+	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type UserServiceServer struct {
-	Repo design.AuthRepository
+	Repo       design.AuthRepository
+	JWTManager *utils.JWTManager
 	auth.UnimplementedAuthServer
 }
 
-func NewUserService(repo design.AuthRepository) *UserServiceServer {
+func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager) *UserServiceServer {
 	return &UserServiceServer{
-		Repo: repo,
+		Repo:       repo,
+		JWTManager: jwtManager,
 	}
 }
 
-func (s *UserServiceServer) Authentication(context context.Context, input *auth.UserRequest) (data auth.UserResponse, err error) {
+func (s *UserServiceServer) Authentication(context context.Context, input *auth.UserRequest) (*auth.UserResponse, error) {
 	result, err := s.Repo.Authentication(context, request.UserRequest{
 		GoogleId: input.GoogleId,
 		Email:    input.Email,
-		Name:     *input.Name,
+		Name:     input.Name,
 	})
 
 	if err != nil {
-		err = status.Errorf(codes.Internal, err.Error())
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	data = auth.UserResponse{
-		Id:       result.Id,
-		GoogleId: result.GoogleId,
-		Email:    result.Email,
-		Name:     &result.Name,
+	token, err := s.JWTManager.Generate(input.Email)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	return
+
+	return &auth.UserResponse{
+		StatusCode: int32(codes.OK),
+		Success:    true,
+		Message:    "success get data.",
+		Data: &auth.UserType{
+			Id:       result.Id,
+			GoogleId: result.GoogleId,
+			Email:    result.Email,
+			Name:     result.Name,
+		},
+		Token: &token,
+	}, err
 }

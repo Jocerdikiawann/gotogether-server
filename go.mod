@@ -1,6 +1,6 @@
 module github.com/Jocerdikiawann/server_share_trip
 
-go 1.18
+go 1.20
 
 require (
 	github.com/google/wire v0.5.0
@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
@@ -48,7 +47,6 @@ func (repo *RouteRepositoryImpl) GetDestinationAndPolyline(context context.Conte
 	}
 
 	err = repo.db.Collection("destination").FindOne(context, filter).Decode(&destination)
-	fmt.Println(destination)
 	return
 }
 

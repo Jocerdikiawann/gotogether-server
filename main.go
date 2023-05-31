@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 
 	"github.com/Jocerdikiawann/server_share_trip/config"
 	"github.com/Jocerdikiawann/server_share_trip/di"
+	"github.com/Jocerdikiawann/server_share_trip/model/proto/auth"
 	"github.com/Jocerdikiawann/server_share_trip/model/proto/route"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"github.com/joho/godotenv"
@@ -15,7 +17,8 @@ import (
 )
 
 var (
-	port = flag.Int("port", 8888, "server port")
+	port          = flag.Int("port", 8888, "server port")
+	tokenDuration = 15 * time.Minute
 )
 
 func init() {
@@ -29,7 +32,12 @@ func main() {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", *port))
 	utils.CheckError(err)
 
-	serv := grpc.NewServer()
+	interceptor := di.InitializedAuthInterceptors(os.Getenv("SECRET_KEY"), tokenDuration)
+
+	serv := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptor.Unary()),
+		grpc.StreamInterceptor(interceptor.Stream()),
+	)
 
 	conf := &config.Config{
 		Username: os.Getenv("MONGO_USERNAME"),
@@ -39,9 +47,15 @@ func main() {
 		NameDb:   os.Getenv("MONGO_DB_NAME"),
 	}
 
-	routeService := di.InitializedServiceServer(conf)
+	routeService := di.InitializedRouteServiceServer(conf)
+	authService := di.InitializedAuthServiceServer(
+		conf,
+		os.Getenv("SECRET_KEY"),
+		tokenDuration,
+	)
 
 	route.RegisterRouteServer(serv, routeService)
+	auth.RegisterAuthServer(serv, authService)
 
 	fmt.Printf("server listening on : %v", listener.Addr())
 

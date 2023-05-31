@@ -12,13 +12,21 @@ service Auth {
 message UserRequest {
   string googleId = 1;
   string email = 2;
-  optional string name = 3;
+  string name = 3;
 }
 
 message UserResponse {
+  int32 statusCode = 1;
+  bool success=2;
+  string message=3;
+  optional UserType data = 4;
+  optional string token = 5;
+}
+
+message UserType {
   string id = 1;
   string googleId = 2;
   string email = 3;
-  optional string name = 4;
+  string name = 4;
 }
 
