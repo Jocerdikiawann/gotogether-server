@@ -63,9 +63,11 @@ func (interceptor *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
 }
 
 func (interceptor *AuthInterceptor) authorize(ctx context.Context, method string) error {
-	_, ok := accessibleRoutes()[method]
+	accessibleRoutes, ok := accessibleRoutes()[method]
 
-	if !ok {
+	log.Printf("--> route : %v\n--> access : %v", method, accessibleRoutes)
+
+	if !ok || !accessibleRoutes {
 		return nil
 	}
 
