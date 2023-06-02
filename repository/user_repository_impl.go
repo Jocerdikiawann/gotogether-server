@@ -5,6 +5,7 @@ import (
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -19,7 +20,7 @@ func NewUserRepository(db *mongo.Database) *AuthRepositoryImpl {
 	}
 }
 
-func (repo *AuthRepositoryImpl) Authentication(context context.Context, request request.UserRequest) (data entity.Auth, err error) {
+func (repo *AuthRepositoryImpl) SignUp(context context.Context, request request.UserRequest) (data entity.Auth, err error) {
 	result, err := repo.db.Collection("user").InsertOne(context, request)
 
 	data = entity.Auth{
@@ -29,4 +30,15 @@ func (repo *AuthRepositoryImpl) Authentication(context context.Context, request 
 		Name:     request.Name,
 	}
 	return
+}
+
+func (repo *AuthRepositoryImpl) CheckIsValidEmail(ctx context.Context, email string) (bool, error) {
+	filter := bson.M{
+		"email": email,
+	}
+	err := repo.db.Collection("user").FindOne(ctx, filter)
+	if err != nil {
+		return true, nil
+	}
+	return false, err.Err()
 }

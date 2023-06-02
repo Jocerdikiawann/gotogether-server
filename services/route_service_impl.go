@@ -10,6 +10,7 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
@@ -17,13 +18,15 @@ import (
 )
 
 type RouteServiceServer struct {
-	Repo design.RouteRepository
+	Repo      design.RouteRepository
+	Validator *validator.Validate
 	route.UnimplementedRouteServer
 }
 
-func NewRouteService(repo design.RouteRepository) *RouteServiceServer {
+func NewRouteService(repo design.RouteRepository, validator *validator.Validate) *RouteServiceServer {
 	return &RouteServiceServer{
-		Repo: repo,
+		Repo:      repo,
+		Validator: validator,
 	}
 }
 
@@ -121,14 +124,20 @@ func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer)
 		if err == io.EOF {
 			break
 		}
-
-		id, errData := s.Repo.SendLocation(stream.Context(), request.LocationRequest{
+		structRequest := request.LocationRequest{
 			GoogleId: in.GetGoogleId(),
 			Point: request.Point{
 				Latitude:  in.GetPoint().Latitude,
 				Longitude: in.GetPoint().Longitude,
 			},
-		})
+		}
+
+		errorValidate := s.Validator.Struct(structRequest)
+		if errorValidate != nil {
+			return status.Error(codes.InvalidArgument, err.Error())
+		}
+
+		id, errData := s.Repo.SendLocation(stream.Context(), structRequest)
 
 		if errData != nil {
 			return errData
@@ -160,14 +169,24 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 		points = append(points, entity.Point{Latitude: p.GetLatitude(), Longitude: p.GetLongitude()})
 	}
 
-	result, err := s.Repo.SendDestinationAndPolyline(context, request.DestinationAndPolylineRequest{
+	structRequest := request.DestinationAndPolylineRequest{
 		GoogleId: req.GoogleId,
 		Destination: entity.Point{
 			Latitude:  req.GetDestination().Latitude,
 			Longitude: req.GetDestination().Longitude,
 		},
 		Polyline: points,
-	})
+	}
+
+	errorValidate := s.Validator.Struct(
+		structRequest,
+	)
+
+	if errorValidate != nil {
+		return nil, status.Error(codes.InvalidArgument, errorValidate.Error())
+	}
+
+	result, err := s.Repo.SendDestinationAndPolyline(context, structRequest)
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

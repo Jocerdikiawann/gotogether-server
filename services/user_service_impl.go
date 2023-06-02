@@ -7,6 +7,7 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -14,22 +15,29 @@ import (
 type UserServiceServer struct {
 	Repo       design.AuthRepository
 	JWTManager *utils.JWTManager
+	Validator  *validator.Validate
 	auth.UnimplementedAuthServer
 }
 
-func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager) *UserServiceServer {
+func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager, validator *validator.Validate) *UserServiceServer {
 	return &UserServiceServer{
 		Repo:       repo,
 		JWTManager: jwtManager,
+		Validator:  validator,
 	}
 }
 
-func (s *UserServiceServer) Authentication(context context.Context, input *auth.UserRequest) (*auth.UserResponse, error) {
-	result, err := s.Repo.Authentication(context, request.UserRequest{
+func (s *UserServiceServer) SignUp(context context.Context, input *auth.UserRequest) (*auth.UserResponse, error) {
+	requestStruct := request.UserRequest{
 		GoogleId: input.GoogleId,
 		Email:    input.Email,
 		Name:     input.Name,
-	})
+	}
+	validate := s.Validator.Struct(requestStruct)
+	if validate != nil {
+		return nil, status.Errorf(codes.InvalidArgument, validate.Error())
+	}
+	result, err := s.Repo.SignUp(context, requestStruct)
 
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())

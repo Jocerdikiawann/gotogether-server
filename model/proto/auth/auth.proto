@@ -6,7 +6,7 @@ option go_package = "github.com/Jocerdikiawann/server_share_trip/model/proto/aut
 option java_multiple_files = true;
 
 service Auth {
-  rpc Authentication(UserRequest) returns (UserResponse) {}
+  rpc SignUp(UserRequest) returns (UserResponse) {}
 }
 
 message UserRequest {

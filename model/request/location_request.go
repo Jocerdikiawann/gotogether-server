@@ -1,8 +1,8 @@
 package request
 
 type LocationRequest struct {
-	GoogleId string `json:"googleId"`
-	Point    Point  `json:"point"`
+	GoogleId string `json:"googleId" validate:"required"`
+	Point    Point  `json:"point" validate:"required"`
 }
 
 type Point struct {

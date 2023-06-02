@@ -32,13 +32,6 @@ func main() {
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", *port))
 	utils.CheckError(err)
 
-	interceptor := di.InitializedAuthInterceptors(os.Getenv("SECRET_KEY"), tokenDuration)
-
-	serv := grpc.NewServer(
-		grpc.UnaryInterceptor(interceptor.Unary()),
-		grpc.StreamInterceptor(interceptor.Stream()),
-	)
-
 	conf := &config.Config{
 		Username: os.Getenv("MONGO_USERNAME"),
 		Password: os.Getenv("MONGO_PASSWORD"),
@@ -46,6 +39,17 @@ func main() {
 		Port:     os.Getenv("MONGO_PORT"),
 		NameDb:   os.Getenv("MONGO_DB_NAME"),
 	}
+
+	interceptor := di.InitializedAuthInterceptors(
+		conf,
+		os.Getenv("SECRET_KEY"),
+		tokenDuration,
+	)
+
+	serv := grpc.NewServer(
+		grpc.UnaryInterceptor(interceptor.Unary()),
+		grpc.StreamInterceptor(interceptor.Stream()),
+	)
 
 	routeService := di.InitializedRouteServiceServer(conf)
 	authService := di.InitializedAuthServiceServer(

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -23,11 +24,12 @@ func accessibleRoutes() map[string]bool {
 }
 
 type AuthInterceptor struct {
-	*utils.JWTManager
+	JWTManager *utils.JWTManager
+	Repo       design.AuthRepository
 }
 
-func NewAuthInterceptor(jwtManager *utils.JWTManager) *AuthInterceptor {
-	return &AuthInterceptor{JWTManager: jwtManager}
+func NewAuthInterceptor(jwtManager *utils.JWTManager, repo design.AuthRepository) *AuthInterceptor {
+	return &AuthInterceptor{JWTManager: jwtManager, Repo: repo}
 }
 
 func (interceptor *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
@@ -83,10 +85,17 @@ func (interceptor *AuthInterceptor) authorize(ctx context.Context, method string
 	}
 
 	accessToken := values[0]
-	//TODO: claims email check on db
-	_, err := interceptor.JWTManager.VerifyAccessToken(accessToken)
+	claims, err := interceptor.JWTManager.VerifyAccessToken(accessToken)
 	if err != nil {
 		return status.Error(codes.Unauthenticated, err.Error())
+	}
+
+	isValid, errValid := interceptor.Repo.CheckIsValidEmail(ctx, claims.Email)
+	if isValid {
+		return nil
+	}
+	if errValid != nil {
+		return status.Error(codes.Unauthenticated, errValid.Error())
 	}
 	return nil
 }

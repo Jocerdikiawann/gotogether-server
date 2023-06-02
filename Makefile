@@ -1,5 +1,6 @@
 gen:
-	protoc --go_out=. --go_opt=paths=source_relative \
+	protoc \
+	--go_out=. --go_opt=paths=source_relative \
     --go-grpc_out=. --go-grpc_opt=paths=source_relative \
     model/proto/*/*.proto
 	wire gen ./di/injector.go
@@ -8,7 +9,7 @@ clean:
 	docker rm -f $$(docker ps -a -q)
 	docker rmi $$(docker images -a -q)
 	docker volume rm $$(docker volume ls -q)
-	rm ./model/proto/*/*.pb.go
+	rm ./model/proto/*/*.*.go
 	rm ./di/wire_gen.go
 build_and_run:
 	docker-compose up -d

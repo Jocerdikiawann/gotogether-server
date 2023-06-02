@@ -12,6 +12,7 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/services"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
 )
 
@@ -29,7 +30,7 @@ func InitializedRouteServiceServer(
 	conf *config.Config,
 ) *services.RouteServiceServer {
 	wire.Build(
-		config.Connect, routeSet, services.NewRouteService,
+		config.Connect, routeSet, validator.New, services.NewRouteService,
 	)
 	return nil
 }
@@ -40,15 +41,16 @@ func InitializedAuthServiceServer(
 	tokenDuration time.Duration,
 ) *services.UserServiceServer {
 	wire.Build(
-		config.Connect, authSet, services.NewUserService, utils.NewJWTManager,
+		config.Connect, authSet, validator.New, services.NewUserService, utils.NewJWTManager,
 	)
 	return nil
 }
 
 func InitializedAuthInterceptors(
+	conf *config.Config,
 	token string,
 	tokenDuration time.Duration,
 ) *interceptors.AuthInterceptor {
-	wire.Build(utils.NewJWTManager, interceptors.NewAuthInterceptor)
+	wire.Build(config.Connect, utils.NewJWTManager, authSet, interceptors.NewAuthInterceptor)
 	return nil
 }

@@ -1,7 +1,7 @@
 package request
 
 type UserRequest struct {
-	GoogleId string
-	Email    string
-	Name     string
+	GoogleId string `validate:"required"`
+	Email    string `validate:"required,email"`
+	Name     string `validate:"required"`
 }
