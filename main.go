@@ -9,9 +9,9 @@ import (
 
 	"github.com/Jocerdikiawann/server_share_trip/config"
 	"github.com/Jocerdikiawann/server_share_trip/di"
-	"github.com/Jocerdikiawann/server_share_trip/model/proto/auth"
-	"github.com/Jocerdikiawann/server_share_trip/model/proto/route"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"github.com/Jocerdikiawann/shared_proto_share_trip/auth"
+	"github.com/Jocerdikiawann/shared_proto_share_trip/route"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )

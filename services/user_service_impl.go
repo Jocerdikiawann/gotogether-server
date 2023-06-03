@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 
-	"github.com/Jocerdikiawann/server_share_trip/model/proto/auth"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"github.com/Jocerdikiawann/shared_proto_share_trip/auth"
 	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

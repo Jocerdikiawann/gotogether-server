@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
-	"github.com/Jocerdikiawann/server_share_trip/model/proto/route"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"github.com/Jocerdikiawann/shared_proto_share_trip/route"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
