@@ -16,7 +16,7 @@ func accessibleRoutes() map[string]bool {
 	const path = "/app.sharetrip.route.Route/"
 
 	return map[string]bool{
-		path + "GetDestination":             true,
+		path + "GetDestination":             false,
 		path + "SendLocation":               true,
 		path + "SendDestinationAndPolyline": true,
 		path + "WatchLocation":              false,
