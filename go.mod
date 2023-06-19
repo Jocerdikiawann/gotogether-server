@@ -3,7 +3,7 @@ module github.com/Jocerdikiawann/server_share_trip
 go 1.20
 
 require (
-	github.com/Jocerdikiawann/shared_proto_share_trip v1.0.1
+	github.com/Jocerdikiawann/shared_proto_share_trip v1.0.2-experimental
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/wire v0.5.0
@@ -22,7 +22,9 @@ require (
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/rs/cors v1.9.0
 	github.com/stretchr/testify v1.8.4 // indirect
+	github.com/tarndt/wasmws v0.0.0-20211231175046-02849cc2d4d2 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
@@ -34,4 +36,5 @@ require (
 	golang.org/x/text v0.9.0 // indirect
 	google.golang.org/genproto v0.0.0-20221118155620-16455021b5e6 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
+	nhooyr.io/websocket v1.7.4 // indirect
 )

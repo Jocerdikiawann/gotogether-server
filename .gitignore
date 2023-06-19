@@ -4,3 +4,5 @@ go.sum
 keyfile.key
 di/wire_gen.go
 *.DS_Store
+cert.pem
+key.pem

@@ -32,13 +32,12 @@ func NewRouteService(repo design.RouteRepository, validator *validator.Validate)
 
 func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream route.Route_WatchLocationServer) error {
 	cursor, err := s.Repo.WatchLocation(input.GetGoogleId())
-
-	waitGroup := sync.WaitGroup{}
-	dataChan := make(chan *route.LocationResponse)
-
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to watch location: %v", err)
 	}
+
+	waitGroup := sync.WaitGroup{}
+	dataChan := make(chan *route.LocationResponse)
 
 	routineCtx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
@@ -46,19 +45,25 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 	waitGroup.Add(1)
 
 	go func() {
-		defer cursor.Close(routineCtx)
-		defer waitGroup.Done()
+		defer func() {
+			cursor.Close(routineCtx)
+			waitGroup.Done()
+		}()
 
 		for cursor.Next(routineCtx) {
 			var data bson.M
 			if err := cursor.Decode(&data); err != nil {
 				utils.CheckError(err)
+				continue
 			}
+
 			fullDocument, _ := data["fullDocument"].(bson.M)
 			id := fullDocument["_id"].(primitive.ObjectID).Hex()
 			point := fullDocument["point"].(bson.M)
 			latitude := point["latitude"].(float64)
 			longitude := point["longitude"].(float64)
+			isFinished, _ := point["isFinished"].(bool)
+
 			dataChan <- &route.LocationResponse{
 				StatusCode: int32(codes.OK),
 				Success:    true,
@@ -70,6 +75,7 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 						Longitude: longitude,
 					},
 				},
+				IsFinish: &isFinished,
 			}
 		}
 	}()
@@ -77,10 +83,19 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 	for {
 		select {
 		case <-stream.Context().Done():
-			defer close(dataChan)
-			waitGroup.Wait()
-			return nil
-		case data := <-dataChan:
+			cancelFn()
+			waitGroup.Done()
+			return status.New(codes.OK, "Stream closed.").Err()
+		case data, ok := <-dataChan:
+			if !ok {
+				waitGroup.Done()
+				return status.New(codes.OK, "Stream closed.").Err()
+			}
+			if data.IsFinish != nil && *data.IsFinish {
+				cancelFn()
+				waitGroup.Done()
+				return status.New(codes.OK, "Stream closed.").Err()
+			}
 			if err := stream.Send(data); err != nil {
 				utils.CheckError(err)
 			}
@@ -116,49 +131,47 @@ func (s *RouteServiceServer) GetDestination(context context.Context, request *ro
 func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer) error {
 	for {
 		in, err := stream.Recv()
-
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			return status.Error(codes.Internal, err.Error())
 		}
 
-		if err == io.EOF {
-			break
-		}
 		structRequest := request.LocationRequest{
 			GoogleId: in.GetGoogleId(),
 			Point: request.Point{
 				Latitude:  in.GetPoint().Latitude,
 				Longitude: in.GetPoint().Longitude,
 			},
+			IsFinish: in.GetIsFinish(),
 		}
 
-		errorValidate := s.Validator.Struct(structRequest)
-		if errorValidate != nil {
-			return status.Error(codes.InvalidArgument, err.Error())
-		}
+		// errorValidate := s.Validator.Struct(structRequest)
+		// if errorValidate != nil {
+		// 	return status.Error(codes.InvalidArgument, errorValidate.Error())
+		// }
 
 		id, errData := s.Repo.SendLocation(stream.Context(), structRequest)
-
 		if errData != nil {
-			return errData
+			return status.Error(codes.Internal, errData.Error())
 		}
 
-		errSending := stream.Send(
-			&route.LocationResponse{
-				StatusCode: int32(codes.OK),
-				Success:    true,
-				Message:    "success get data.",
-				Data: &route.LocationType{
-					Point: in.GetPoint(),
-					Id:    id,
-				},
+		errSending := stream.Send(&route.LocationResponse{
+			StatusCode: int32(codes.OK),
+			Success:    true,
+			Message:    "success get data.",
+			Data: &route.LocationType{
+				Point: in.GetPoint(),
+				Id:    id,
 			},
-		)
-
+			IsFinish: &in.IsFinish,
+		})
 		if errSending != nil {
 			return status.Error(codes.Internal, errSending.Error())
 		}
 	}
+
 	return nil
 }
 
