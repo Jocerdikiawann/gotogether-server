@@ -6,7 +6,7 @@ clean:
 	docker rmi $$(docker images -a -q)
 	docker volume rm $$(docker volume ls -q)
 	rm ./di/wire_gen.go
-build_and_run:
+build:
 	docker-compose up -d
 	@$(shell sleep 10)
 	docker exec -it mongo1 mongosh --eval "rs.initiate({ \
@@ -20,5 +20,5 @@ build_and_run:
 	@$(shell sleep 10)
 	docker exec -it mongo1 mongosh --eval "rs.status()"
 	@$(shell sleep 10)
+run:
 	go run .
-	
