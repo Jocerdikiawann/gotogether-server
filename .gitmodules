@@ -1,0 +1,6 @@
+[submodule "shared_proto_share_trip"]
+	path = shared_proto_share_trip
+	url = https://github.com/Jocerdikiawann/shared_proto_share_trip
+[submodule "react_client_share_trip"]
+	path = react_client_share_trip
+	url = https://github.com/Jocerdikiawann/react_client_share_trip
