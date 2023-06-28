@@ -15,6 +15,9 @@ MONGO_PASSWORD=
 MONGO_HOST=
 MONGO_DB_NAME=
 SECRET_KEY=
+TELEGRAM_URL=
+TELEGRAM_TOKEN=
+GROUP_ID=
 ```
 
 Installation :
@@ -24,5 +27,5 @@ make gen
 
 Run :
 ```bash
-make build_and_run
+make build && make run
 ```
