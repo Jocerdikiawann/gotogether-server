@@ -3,10 +3,10 @@ package services
 import (
 	"context"
 
+	"github.com/Jocerdikiawann/server_share_trip/model/pb"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
-	"github.com/Jocerdikiawann/shared_proto_share_trip/auth"
 	"github.com/go-playground/validator/v10"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -16,7 +16,7 @@ type UserServiceServer struct {
 	Repo       design.AuthRepository
 	JWTManager *utils.JWTManager
 	Validator  *validator.Validate
-	auth.UnimplementedAuthServer
+	pb.UnimplementedAuthServer
 }
 
 func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager, validator *validator.Validate) *UserServiceServer {
@@ -27,7 +27,7 @@ func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager, va
 	}
 }
 
-func (s *UserServiceServer) SignUp(context context.Context, input *auth.UserRequest) (*auth.UserResponse, error) {
+func (s *UserServiceServer) SignUp(context context.Context, input *pb.UserRequest) (*pb.UserResponse, error) {
 	requestStruct := request.UserRequest{
 		GoogleId: input.GoogleId,
 		Email:    input.Email,
@@ -48,11 +48,11 @@ func (s *UserServiceServer) SignUp(context context.Context, input *auth.UserRequ
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	return &auth.UserResponse{
+	return &pb.UserResponse{
 		StatusCode: int32(codes.OK),
 		Success:    true,
 		Message:    "success get data.",
-		Data: &auth.UserType{
+		Data: &pb.UserType{
 			Id:       result.Id,
 			GoogleId: result.GoogleId,
 			Email:    result.Email,

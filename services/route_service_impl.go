@@ -6,10 +6,10 @@ import (
 	"sync"
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
+	"github.com/Jocerdikiawann/server_share_trip/model/pb"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
-	"github.com/Jocerdikiawann/shared_proto_share_trip/route"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -20,7 +20,7 @@ import (
 type RouteServiceServer struct {
 	Repo      design.RouteRepository
 	Validator *validator.Validate
-	route.UnimplementedRouteServer
+	pb.UnimplementedRouteServer
 }
 
 func NewRouteService(repo design.RouteRepository, validator *validator.Validate) *RouteServiceServer {
@@ -30,14 +30,14 @@ func NewRouteService(repo design.RouteRepository, validator *validator.Validate)
 	}
 }
 
-func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream route.Route_WatchLocationServer) error {
+func (s *RouteServiceServer) WatchLocation(input *pb.WatchRequest, stream pb.Route_WatchLocationServer) error {
 	cursor, err := s.Repo.WatchLocation(input.GetGoogleId())
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to watch location: %v", err)
 	}
 
 	waitGroup := sync.WaitGroup{}
-	dataChan := make(chan *route.LocationResponse)
+	dataChan := make(chan *pb.LocationResponse)
 
 	routineCtx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
@@ -64,13 +64,13 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 			longitude := point["longitude"].(float64)
 			isFinished, _ := point["isFinished"].(bool)
 
-			dataChan <- &route.LocationResponse{
+			dataChan <- &pb.LocationResponse{
 				StatusCode: int32(codes.OK),
 				Success:    true,
 				Message:    "success get data",
-				Data: &route.LocationType{
+				Data: &pb.LocationType{
 					Id: id,
-					Point: &route.Point{
+					Point: &pb.Point{
 						Latitude:  latitude,
 						Longitude: longitude,
 					},
@@ -103,32 +103,32 @@ func (s *RouteServiceServer) WatchLocation(input *route.WatchRequest, stream rou
 	}
 }
 
-func (s *RouteServiceServer) GetDestination(context context.Context, request *route.RouteRequest) (*route.DestintationAndPolylineResponse, error) {
+func (s *RouteServiceServer) GetDestination(context context.Context, request *pb.RouteRequest) (*pb.DestintationAndPolylineResponse, error) {
 	result, err := s.Repo.GetDestinationAndPolyline(context, request.GetId())
 
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	points := make([]*route.Point, 0, len(result.Polyline))
+	points := make([]*pb.Point, 0, len(result.Polyline))
 
 	for _, p := range result.Polyline {
-		points = append(points, &route.Point{Latitude: p.Latitude, Longitude: p.Longitude})
+		points = append(points, &pb.Point{Latitude: p.Latitude, Longitude: p.Longitude})
 	}
 
-	return &route.DestintationAndPolylineResponse{
+	return &pb.DestintationAndPolylineResponse{
 		StatusCode: int32(codes.OK),
 		Success:    true,
 		Message:    "success get data.",
-		Data: &route.DestintationAndPolylineType{
+		Data: &pb.DestintationAndPolylineType{
 			Id:            result.Id.Hex(),
-			RoutePolyline: &route.RoutePolyline{Points: points},
-			Destination:   &route.Point{Latitude: result.DestinationLatLng.Latitude, Longitude: result.DestinationLatLng.Longitude},
+			RoutePolyline: &pb.RoutePolyline{Points: points},
+			Destination:   &pb.Point{Latitude: result.DestinationLatLng.Latitude, Longitude: result.DestinationLatLng.Longitude},
 		},
 	}, nil
 }
 
-func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer) error {
+func (s *RouteServiceServer) SendLocation(stream pb.Route_SendLocationServer) error {
 	for {
 		in, err := stream.Recv()
 		if err != nil {
@@ -147,21 +147,16 @@ func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer)
 			IsFinish: in.GetIsFinish(),
 		}
 
-		// errorValidate := s.Validator.Struct(structRequest)
-		// if errorValidate != nil {
-		// 	return status.Error(codes.InvalidArgument, errorValidate.Error())
-		// }
-
 		id, errData := s.Repo.SendLocation(stream.Context(), structRequest)
 		if errData != nil {
 			return status.Error(codes.Internal, errData.Error())
 		}
 
-		errSending := stream.Send(&route.LocationResponse{
+		errSending := stream.Send(&pb.LocationResponse{
 			StatusCode: int32(codes.OK),
 			Success:    true,
 			Message:    "success get data.",
-			Data: &route.LocationType{
+			Data: &pb.LocationType{
 				Point: in.GetPoint(),
 				Id:    id,
 			},
@@ -175,7 +170,7 @@ func (s *RouteServiceServer) SendLocation(stream route.Route_SendLocationServer)
 	return nil
 }
 
-func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context, req *route.DestintationAndPolylineRequest) (*route.DestintationAndPolylineResponse, error) {
+func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context, req *pb.DestintationAndPolylineRequest) (*pb.DestintationAndPolylineResponse, error) {
 	points := make([]entity.Point, 0, len(req.GetRoutePolyline().Points))
 
 	for _, p := range req.GetRoutePolyline().GetPoints() {
@@ -205,11 +200,11 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &route.DestintationAndPolylineResponse{
+	return &pb.DestintationAndPolylineResponse{
 		StatusCode: int32(codes.OK),
 		Success:    true,
 		Message:    "success get data.",
-		Data: &route.DestintationAndPolylineType{
+		Data: &pb.DestintationAndPolylineType{
 			Destination:   req.GetDestination(),
 			Id:            result,
 			RoutePolyline: req.GetRoutePolyline(),

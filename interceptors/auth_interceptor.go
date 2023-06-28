@@ -2,10 +2,10 @@ package interceptors
 
 import (
 	"context"
-	"log"
 
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -26,10 +26,11 @@ func accessibleRoutes() map[string]bool {
 type AuthInterceptor struct {
 	JWTManager *utils.JWTManager
 	Repo       design.AuthRepository
+	Logger     *logrus.Logger
 }
 
-func NewAuthInterceptor(jwtManager *utils.JWTManager, repo design.AuthRepository) *AuthInterceptor {
-	return &AuthInterceptor{JWTManager: jwtManager, Repo: repo}
+func NewAuthInterceptor(jwtManager *utils.JWTManager, repo design.AuthRepository, logger *logrus.Logger) *AuthInterceptor {
+	return &AuthInterceptor{JWTManager: jwtManager, Repo: repo, Logger: logger}
 }
 
 func (interceptor *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
@@ -39,9 +40,9 @@ func (interceptor *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		log.Printf("--> Unary interceptors : %v", info.FullMethod)
 		err := interceptor.authorize(ctx, info.FullMethod)
 		if err != nil {
+			interceptor.Logger.Error(err.Error())
 			return nil, err
 		}
 		return handler(ctx, req)
@@ -55,9 +56,9 @@ func (interceptor *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
 		info *grpc.StreamServerInfo,
 		handler grpc.StreamHandler,
 	) error {
-		log.Printf("--> Stream interceptors : %v", info.FullMethod)
 		err := interceptor.authorize(ss.Context(), info.FullMethod)
 		if err != nil {
+			interceptor.Logger.Error(err.Error())
 			return err
 		}
 		return handler(srv, ss)
@@ -66,9 +67,6 @@ func (interceptor *AuthInterceptor) Stream() grpc.StreamServerInterceptor {
 
 func (interceptor *AuthInterceptor) authorize(ctx context.Context, method string) error {
 	accessibleRoutes, ok := accessibleRoutes()[method]
-
-	log.Printf("--> route : %v", method)
-	log.Printf("--> access : %v", accessibleRoutes)
 
 	if !ok || !accessibleRoutes {
 		return nil

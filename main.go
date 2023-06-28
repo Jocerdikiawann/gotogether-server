@@ -2,15 +2,16 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"io/fs"
+	"net"
 	"os"
 	"time"
 
 	"github.com/Jocerdikiawann/server_share_trip/config"
 	"github.com/Jocerdikiawann/server_share_trip/di"
+	"github.com/Jocerdikiawann/server_share_trip/model/pb"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
-	"github.com/Jocerdikiawann/shared_proto_share_trip/auth"
-	"github.com/Jocerdikiawann/shared_proto_share_trip/route"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
@@ -18,7 +19,7 @@ import (
 var (
 	port          = flag.Int("port", 8888, "server port")
 	host          = flag.String("host", "localhost", "server host")
-	tokenDuration = 15 * time.Minute
+	tokenDuration = 60 * time.Minute
 )
 
 var uiFS fs.FS
@@ -29,9 +30,9 @@ func init() {
 }
 
 func main() {
-	// flag.Parse()
-	// listener, err := net.Listen("tcp", fmt.Sprintf(":%v", *port))
-	// utils.CheckError(err)
+	flag.Parse()
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", *port))
+	utils.CheckError(err)
 
 	conf := &config.Config{
 		Username: os.Getenv("MONGO_USERNAME"),
@@ -55,10 +56,10 @@ func main() {
 		os.Getenv("SECRET_KEY"),
 		tokenDuration,
 	)
-	route.RegisterRouteServer(serv, routeService)
-	auth.RegisterAuthServer(serv, authService)
+	pb.RegisterRouteServer(serv, routeService)
+	pb.RegisterAuthServer(serv, authService)
 
-	// fmt.Printf("server listening on : %v", listener.Addr())
-	// err = serv.Serve(listener)
-	// utils.CheckError(err)
+	fmt.Printf("server listening on : %v", listener.Addr())
+	err = serv.Serve(listener)
+	utils.CheckError(err)
 }
