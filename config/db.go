@@ -11,7 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-type Config struct {
+type Db struct {
 	Username string
 	Password string
 	Host     string
@@ -19,13 +19,8 @@ type Config struct {
 	NameDb   string
 }
 
-func Connect(config *Config) *mongo.Database {
-	uri := fmt.Sprintf("mongodb://%v:%v", config.Host, config.Port)
-	// mongodb: //localhost:27017/?replicaSet=myReplicaSet&directConnection=true
-	// credential := options.Credential{
-	// 	Username: usernameDb,
-	// 	Password: passwordDb,
-	// }
+func Connect(dbConfig *Db) *mongo.Database {
+	uri := fmt.Sprintf("mongodb://%v:%v", dbConfig.Host, dbConfig.Port)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -34,7 +29,6 @@ func Connect(config *Config) *mongo.Database {
 		SetMaxPoolSize(50).
 		SetReplicaSet("myReplicaSet").
 		SetDirect(true)
-		// .SetAuth(credential)
 	client, err := mongo.NewClient(clientOptions)
 	utils.CheckError(err)
 
@@ -44,7 +38,7 @@ func Connect(config *Config) *mongo.Database {
 	err = client.Ping(ctx, readpref.PrimaryPreferred())
 	utils.CheckError(err)
 
-	db := client.Database(config.NameDb)
+	db := client.Database(dbConfig.NameDb)
 
 	return db
 }

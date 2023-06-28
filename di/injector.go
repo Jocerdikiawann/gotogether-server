@@ -26,31 +26,35 @@ var authSet = wire.NewSet(
 	wire.Bind(new(design.AuthRepository), new(*repository.AuthRepositoryImpl)),
 )
 
+var teleSet = wire.NewSet(
+	repository.NewTelegramRepository,
+	wire.Bind(new(design.TelegramRepository), new(*repository.TelegramRepositoryImpl)),
+)
+
 func InitializedRouteServiceServer(
-	conf *config.Config,
+	conf *config.Db,
+	secretKey string,
+	tokenDuration time.Duration,
 ) *services.RouteServiceServer {
 	wire.Build(
-		config.Connect, routeSet, validator.New, services.NewRouteService,
+		config.Connect, routeSet,
+		validator.New, services.NewRouteService, 
+		teleSet, utils.NewLogger, utils.NewJWTManager,
+		interceptors.NewAuthInterceptor,authSet,
 	)
 	return nil
 }
 
 func InitializedAuthServiceServer(
-	conf *config.Config,
-	token string,
+	conf *config.Db,
+	secretKey string,
 	tokenDuration time.Duration,
 ) *services.UserServiceServer {
 	wire.Build(
-		config.Connect, authSet, validator.New, services.NewUserService, utils.NewJWTManager,
+		config.Connect, authSet, validator.New,
+		utils.NewJWTManager,
+		services.NewUserService,
+		teleSet, utils.NewLogger,
 	)
-	return nil
-}
-
-func InitializedAuthInterceptors(
-	conf *config.Config,
-	token string,
-	tokenDuration time.Duration,
-) *interceptors.AuthInterceptor {
-	wire.Build(config.Connect, utils.NewJWTManager, authSet, interceptors.NewAuthInterceptor)
 	return nil
 }

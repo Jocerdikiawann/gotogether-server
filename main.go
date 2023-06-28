@@ -1,64 +1,73 @@
 package main
 
 import (
+	"context"
 	"flag"
-	"io/fs"
+	"log"
+	"net/http"
 	"os"
 	"time"
 
 	"github.com/Jocerdikiawann/server_share_trip/config"
 	"github.com/Jocerdikiawann/server_share_trip/di"
+	"github.com/Jocerdikiawann/server_share_trip/model/pb"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
-	"github.com/Jocerdikiawann/shared_proto_share_trip/auth"
-	"github.com/Jocerdikiawann/shared_proto_share_trip/route"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/joho/godotenv"
-	"google.golang.org/grpc"
 )
 
 var (
-	port          = flag.Int("port", 8888, "server port")
-	host          = flag.String("host", "localhost", "server host")
-	tokenDuration = 15 * time.Minute
+	grpcServerEndpoint = flag.String("grpc-server-endpoint", "localhost:8888", "gRPC server endpoint")
+	tokenDuration      = 15 * time.Minute
+	secretKey          = os.Getenv("SECRET_KEY")
 )
-
-var uiFS fs.FS
 
 func init() {
 	err := godotenv.Load()
 	utils.CheckError(err)
 }
 
-func main() {
-	// flag.Parse()
-	// listener, err := net.Listen("tcp", fmt.Sprintf(":%v", *port))
-	// utils.CheckError(err)
-
-	conf := &config.Config{
+func run() error {
+	conf := &config.Db{
 		Username: os.Getenv("MONGO_USERNAME"),
 		Password: os.Getenv("MONGO_PASSWORD"),
 		Host:     os.Getenv("MONGO_HOST"),
 		Port:     os.Getenv("MONGO_PORT"),
 		NameDb:   os.Getenv("MONGO_DB_NAME"),
 	}
-	interceptor := di.InitializedAuthInterceptors(
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	grpcMux := runtime.NewServeMux()
+
+	routeService := di.InitializedRouteServiceServer(
 		conf,
-		os.Getenv("SECRET_KEY"),
+		secretKey,
 		tokenDuration,
 	)
-	serv := grpc.NewServer(
-		grpc.UnaryInterceptor(interceptor.Unary()),
-		grpc.StreamInterceptor(interceptor.Stream()),
-	)
-	routeService := di.InitializedRouteServiceServer(conf)
 	authService := di.InitializedAuthServiceServer(
 		conf,
-		os.Getenv("SECRET_KEY"),
+		secretKey,
 		tokenDuration,
 	)
-	route.RegisterRouteServer(serv, routeService)
-	auth.RegisterAuthServer(serv, authService)
 
-	// fmt.Printf("server listening on : %v", listener.Addr())
-	// err = serv.Serve(listener)
-	// utils.CheckError(err)
+	routeErr := pb.RegisterRouteHandlerServer(ctx, grpcMux, routeService)
+	utils.CheckError(routeErr)
+	authErr := pb.RegisterAuthHandlerServer(ctx, grpcMux, authService)
+	utils.CheckError(authErr)
+
+	s := &http.Server{
+		Addr:    *grpcServerEndpoint,
+		Handler: grpcMux,
+	}
+
+	return s.ListenAndServe()
+}
+
+func main() {
+	if err := run(); err != nil {
+		log.Fatalf("cannot start GRPC server %v", err)
+	}
 }
