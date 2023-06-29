@@ -33,6 +33,7 @@ func (repo *TelegramRepositoryImpl) SendMessage(context context.Context, chat st
 		DisableWebPagePreview: false,
 		DisableNotification:   false,
 		ChatID:                groupId,
+		ParseMode:             "HTML",
 	}
 
 	body, err := json.Marshal(payload)

@@ -1,25 +1,20 @@
 version: '3.9'
 
 services:
+  envoy:
+      image: envoyproxy/envoy-dev:v1.26-latest
+      volumes:
+        - ./envoy.yaml:/etc/envoy/envoy.yaml
+      ports:
+        - "8888:8888"
+        - "8080:8080"
   mongo1:
       image: mongo:latest
       container_name: mongo1
       volumes:
         - mongo-data:/data/db1
-        # - ./keyfile.key:/data/db1/keyfile.key
-      # entrypoint: 
-      #   - bash
-      #   - -c
-      #   - |
-      #       chmod 400 /data/db1/keyfile.key
-      #       chown 999:999 /data/db1/keyfile.key
-      #       exec docker-entrypoint.sh $$@ 
-      # --keyFile /data/db1/keyfile.key
       command: mongod --replSet myReplicaSet --bind_ip localhost,mongo1
       restart: always
-      # environment:
-      #   MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      #   MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
       ports:
         - ${MONGO_PORT}:${MONGO_PORT}
       expose:
@@ -29,22 +24,10 @@ services:
   mongo2:
       image: mongo:latest
       container_name: mongo2
-      #--keyFile /data/db2/keyfile.key
       command: mongod --replSet myReplicaSet --bind_ip localhost,mongo2
       restart: always
-      # environment:
-      #   MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      #   MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
       volumes:
         - mongo-data:/data/db2
-        # - ./keyfile.key:/data/db2/keyfile.key
-      # entrypoint: 
-      #   - bash
-      #   - -c
-      #   - |
-      #       chmod 400 /data/db2/keyfile.key
-      #       chown 999:999 /data/db2/keyfile.key
-      #       exec docker-entrypoint.sh $$@ 
       ports:
         - ${MONGO_PORT_SECOND}:${MONGO_PORT}
       expose:
@@ -54,22 +37,10 @@ services:
   mongo3:
       image: mongo:latest
       container_name: mongo3
-      #--keyFile /data/db3/keyfile.key
       command: mongod --replSet myReplicaSet --bind_ip localhost,mongo3
       restart: always
       volumes:
         - mongo-data:/data/db3
-      #   - ./keyfile.key:/data/db3/keyfile.key
-      # entrypoint: 
-      #   - bash
-      #   - -c
-      #   - |
-      #       chmod 400 /data/db3/keyfile.key
-      #       chown 999:999 /data/db3/keyfile.key
-      #       exec docker-entrypoint.sh $$@ 
-      # environment:
-      #   MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
-      #   MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
       ports:
         - ${MONGO_PORT_THIRD}:${MONGO_PORT}
       expose:

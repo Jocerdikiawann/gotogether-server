@@ -6,4 +6,5 @@ type MessageTelegram struct {
 	DisableNotification   bool   `json:"disable_notification"`
 	ReplyToMessageID      int64  `json:"reply_to_message_id,omitempty"`
 	ChatID                int64  `json:"chat_id"`
+	ParseMode             string `json:"parse_mode,omitempty"`
 }

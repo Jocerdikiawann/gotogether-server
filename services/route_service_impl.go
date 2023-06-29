@@ -3,14 +3,13 @@ package services
 import (
 	"context"
 	"io"
-	"sync"
 
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/pb"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
-	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"github.com/go-playground/validator/v10"
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"google.golang.org/grpc/codes"
@@ -21,39 +20,38 @@ type RouteServiceServer struct {
 	Repo      design.RouteRepository
 	Validator *validator.Validate
 	pb.UnimplementedRouteServer
+	Logger *logrus.Logger
 }
 
-func NewRouteService(repo design.RouteRepository, validator *validator.Validate) *RouteServiceServer {
+func NewRouteService(repo design.RouteRepository, validator *validator.Validate, logrus *logrus.Logger) *RouteServiceServer {
 	return &RouteServiceServer{
 		Repo:      repo,
 		Validator: validator,
+		Logger:    logrus,
 	}
 }
 
 func (s *RouteServiceServer) WatchLocation(input *pb.WatchRequest, stream pb.Route_WatchLocationServer) error {
 	cursor, err := s.Repo.WatchLocation(input.GetGoogleId())
 	if err != nil {
-		return status.Errorf(codes.Internal, "failed to watch location: %v", err)
+		s.Logger.Error(err.Error())
+		return status.Error(codes.Internal, "failed to watch location")
 	}
 
-	waitGroup := sync.WaitGroup{}
 	dataChan := make(chan *pb.LocationResponse)
 
 	routineCtx, cancelFn := context.WithCancel(context.Background())
 	defer cancelFn()
 
-	waitGroup.Add(1)
-
 	go func() {
 		defer func() {
 			cursor.Close(routineCtx)
-			waitGroup.Done()
 		}()
 
 		for cursor.Next(routineCtx) {
 			var data bson.M
 			if err := cursor.Decode(&data); err != nil {
-				utils.CheckError(err)
+				s.Logger.Error(err.Error())
 				continue
 			}
 
@@ -84,20 +82,18 @@ func (s *RouteServiceServer) WatchLocation(input *pb.WatchRequest, stream pb.Rou
 		select {
 		case <-stream.Context().Done():
 			cancelFn()
-			waitGroup.Done()
+			close(dataChan)
 			return status.New(codes.OK, "Stream closed.").Err()
 		case data, ok := <-dataChan:
 			if !ok {
-				waitGroup.Done()
 				return status.New(codes.OK, "Stream closed.").Err()
 			}
 			if data.IsFinish != nil && *data.IsFinish {
 				cancelFn()
-				waitGroup.Done()
 				return status.New(codes.OK, "Stream closed.").Err()
 			}
 			if err := stream.Send(data); err != nil {
-				utils.CheckError(err)
+				s.Logger.Error(err.Error())
 			}
 		}
 	}
@@ -107,6 +103,7 @@ func (s *RouteServiceServer) GetDestination(context context.Context, request *pb
 	result, err := s.Repo.GetDestinationAndPolyline(context, request.GetId())
 
 	if err != nil {
+		s.Logger.Error(err.Error())
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
@@ -129,13 +126,20 @@ func (s *RouteServiceServer) GetDestination(context context.Context, request *pb
 }
 
 func (s *RouteServiceServer) SendLocation(stream pb.Route_SendLocationServer) error {
+	var latestData *pb.LocationResponse
 	for {
 		in, err := stream.Recv()
+		if err == io.EOF {
+			s.Logger.Error(err.Error())
+			return stream.SendAndClose(latestData)
+		}
 		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return status.Error(codes.Internal, err.Error())
+			s.Logger.Error(err.Error())
+			return stream.SendAndClose(&pb.LocationResponse{
+				StatusCode: int32(codes.Internal),
+				Success:    false,
+				Message:    err.Error(),
+			})
 		}
 
 		structRequest := request.LocationRequest{
@@ -149,25 +153,27 @@ func (s *RouteServiceServer) SendLocation(stream pb.Route_SendLocationServer) er
 
 		id, errData := s.Repo.SendLocation(stream.Context(), structRequest)
 		if errData != nil {
-			return status.Error(codes.Internal, errData.Error())
+			s.Logger.Error(err.Error())
+			return stream.SendAndClose(
+				&pb.LocationResponse{
+					StatusCode: int32(codes.Internal),
+					Success:    false,
+					Message:    errData.Error(),
+				},
+			)
 		}
 
-		errSending := stream.Send(&pb.LocationResponse{
+		latestData = &pb.LocationResponse{
 			StatusCode: int32(codes.OK),
 			Success:    true,
-			Message:    "success get data.",
+			Message:    "Stream send data.",
 			Data: &pb.LocationType{
 				Point: in.GetPoint(),
 				Id:    id,
 			},
 			IsFinish: &in.IsFinish,
-		})
-		if errSending != nil {
-			return status.Error(codes.Internal, errSending.Error())
 		}
 	}
-
-	return nil
 }
 
 func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context, req *pb.DestintationAndPolylineRequest) (*pb.DestintationAndPolylineResponse, error) {
@@ -191,12 +197,14 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 	)
 
 	if errorValidate != nil {
+		s.Logger.Error(errorValidate.Error())
 		return nil, status.Error(codes.InvalidArgument, errorValidate.Error())
 	}
 
 	result, err := s.Repo.SendDestinationAndPolyline(context, structRequest)
 
 	if err != nil {
+		s.Logger.Error(err.Error())
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 

@@ -36,6 +36,7 @@ func InitializedRouteServiceServer(
 ) *services.RouteServiceServer {
 	wire.Build(
 		config.Connect, routeSet, validator.New, services.NewRouteService,
+		utils.NewLogger, teleSet,
 	)
 	return nil
 }
@@ -46,7 +47,9 @@ func InitializedAuthServiceServer(
 	tokenDuration time.Duration,
 ) *services.UserServiceServer {
 	wire.Build(
-		config.Connect, authSet, validator.New, services.NewUserService, utils.NewJWTManager,
+		config.Connect, authSet, validator.New, 
+		services.NewUserService, utils.NewJWTManager,
+		utils.NewLogger, teleSet,
 	)
 	return nil
 }

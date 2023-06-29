@@ -8,6 +8,7 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"github.com/go-playground/validator/v10"
+	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -17,13 +18,15 @@ type UserServiceServer struct {
 	JWTManager *utils.JWTManager
 	Validator  *validator.Validate
 	pb.UnimplementedAuthServer
+	Logger *logrus.Logger
 }
 
-func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager, validator *validator.Validate) *UserServiceServer {
+func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager, validator *validator.Validate, logrus *logrus.Logger) *UserServiceServer {
 	return &UserServiceServer{
 		Repo:       repo,
 		JWTManager: jwtManager,
 		Validator:  validator,
+		Logger:     logrus,
 	}
 }
 
@@ -35,16 +38,19 @@ func (s *UserServiceServer) SignUp(context context.Context, input *pb.UserReques
 	}
 	validate := s.Validator.Struct(requestStruct)
 	if validate != nil {
-		return nil, status.Errorf(codes.InvalidArgument, validate.Error())
+		s.Logger.Error(validate.Error())
+		return nil, status.Errorf(codes.InvalidArgument, "Bad request")
 	}
 	result, err := s.Repo.SignUp(context, requestStruct)
 
 	if err != nil {
+		s.Logger.Error(validate.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
 	token, err := s.JWTManager.Generate(input.Email)
 	if err != nil {
+		s.Logger.Error(validate.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 

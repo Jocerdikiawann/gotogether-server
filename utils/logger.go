@@ -18,7 +18,7 @@ func (l *LoggerHook) Levels() []logrus.Level {
 func (l *LoggerHook) Fire(entry *logrus.Entry) error {
 	eChan := make(chan error)
 	go func() {
-		chat := fmt.Sprintf("Log %v at %v \nThe Message : %v", entry.Level, entry.Time, entry.Message)
+		chat := fmt.Sprintf("Log %v at %v \n<b>!!The Message!!</b>\n%v", entry.Level, entry.Time, entry.Message)
 		if err := l.Repo.SendMessage(entry.Context, chat); err != nil {
 			eChan <- err
 		}
