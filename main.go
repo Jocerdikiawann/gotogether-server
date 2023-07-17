@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
-	"io/fs"
-	"net"
+	"net/http"
 	"os"
 	"time"
 
@@ -12,17 +12,14 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/di"
 	"github.com/Jocerdikiawann/server_share_trip/model/pb"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/joho/godotenv"
-	"google.golang.org/grpc"
 )
 
 var (
-	port          = flag.Int("port", 8888, "server port")
-	host          = flag.String("host", "localhost", "server host")
-	tokenDuration = 60 * time.Minute
+	grpcServerEndpoint = flag.String("grpc-server-endpoint", "localhost:8888", "gRPC server endpoint")
+	tokenDuration      = time.Hour * 24 * 365
 )
-
-var uiFS fs.FS
 
 func init() {
 	err := godotenv.Load()
@@ -30,9 +27,12 @@ func init() {
 }
 
 func main() {
-	flag.Parse()
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%v", *port))
-	utils.CheckError(err)
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	grpcMux := runtime.NewServeMux()
 
 	conf := &config.Config{
 		Username: os.Getenv("MONGO_USERNAME"),
@@ -41,25 +41,30 @@ func main() {
 		Port:     os.Getenv("MONGO_PORT"),
 		NameDb:   os.Getenv("MONGO_DB_NAME"),
 	}
-	interceptor := di.InitializedAuthInterceptors(
+
+	routeService := di.InitializedRouteServiceServer(
 		conf,
 		os.Getenv("SECRET_KEY"),
 		tokenDuration,
 	)
-	serv := grpc.NewServer(
-		grpc.UnaryInterceptor(interceptor.Unary()),
-		grpc.StreamInterceptor(interceptor.Stream()),
-	)
-	routeService := di.InitializedRouteServiceServer(conf)
 	authService := di.InitializedAuthServiceServer(
 		conf,
 		os.Getenv("SECRET_KEY"),
 		tokenDuration,
 	)
-	pb.RegisterRouteServer(serv, routeService)
-	pb.RegisterAuthServer(serv, authService)
+	routeErr := pb.RegisterRouteHandlerServer(ctx, grpcMux, routeService)
+	utils.CheckError(routeErr)
+	authErr := pb.RegisterAuthHandlerServer(ctx, grpcMux, authService)
+	utils.CheckError(authErr)
 
-	fmt.Printf("server listening on : %v", listener.Addr())
-	err = serv.Serve(listener)
-	utils.CheckError(err)
+	s := &http.Server{
+		Addr:    *grpcServerEndpoint,
+		Handler: grpcMux,
+	}
+
+	fmt.Printf("Server run on http://%v", s.Addr)
+
+	if servError := s.ListenAndServe(); servError != nil {
+		utils.CheckError(servError)
+	}
 }

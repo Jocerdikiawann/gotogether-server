@@ -1,19 +1,11 @@
 version: '3.9'
 
 services:
-  envoy:
-      image: envoyproxy/envoy-dev:v1.26-latest
-      volumes:
-        - ./envoy.yaml:/etc/envoy/envoy.yaml
-      ports:
-        - "8888:8888"
-        - "8080:8080"
-  mongo1:
+  mongo:
       image: mongo:latest
-      container_name: mongo1
+      container_name: mongo
       volumes:
         - mongo-data:/data/db1
-      command: mongod --replSet myReplicaSet --bind_ip localhost,mongo1
       restart: always
       ports:
         - ${MONGO_PORT}:${MONGO_PORT}
@@ -21,32 +13,9 @@ services:
         - ${MONGO_PORT}
       networks:
         - mongoCluster
-  mongo2:
-      image: mongo:latest
-      container_name: mongo2
-      command: mongod --replSet myReplicaSet --bind_ip localhost,mongo2
-      restart: always
-      volumes:
-        - mongo-data:/data/db2
-      ports:
-        - ${MONGO_PORT_SECOND}:${MONGO_PORT}
-      expose:
-        - ${MONGO_PORT_SECOND}
-      networks:
-        - mongoCluster
-  mongo3:
-      image: mongo:latest
-      container_name: mongo3
-      command: mongod --replSet myReplicaSet --bind_ip localhost,mongo3
-      restart: always
-      volumes:
-        - mongo-data:/data/db3
-      ports:
-        - ${MONGO_PORT_THIRD}:${MONGO_PORT}
-      expose:
-        - ${MONGO_PORT_THIRD}
-      networks:
-        - mongoCluster
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME}
+        MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
 networks:
   mongoCluster:
     driver: bridge

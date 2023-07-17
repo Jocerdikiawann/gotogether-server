@@ -21,20 +21,17 @@ type Config struct {
 
 func Connect(config *Config) *mongo.Database {
 	uri := fmt.Sprintf("mongodb://%v:%v", config.Host, config.Port)
-	// mongodb: //localhost:27017/?replicaSet=myReplicaSet&directConnection=true
-	// credential := options.Credential{
-	// 	Username: usernameDb,
-	// 	Password: passwordDb,
-	// }
+	credential := options.Credential{
+		Username: config.Username,
+		Password: config.Password,
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	clientOptions := options.Client().ApplyURI(uri).
 		SetMaxPoolSize(50).
-		SetReplicaSet("myReplicaSet").
-		SetDirect(true)
-		// .SetAuth(credential)
+		SetAuth(credential)
 	client, err := mongo.NewClient(clientOptions)
 	utils.CheckError(err)
 

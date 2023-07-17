@@ -9,5 +9,6 @@ import (
 
 type AuthRepository interface {
 	SignUp(context.Context, request.UserRequest) (entity.Auth, error)
-	CheckIsValidEmail(context.Context, string) (bool, error)
+	CheckIsValidEmail(context.Context, string) error
+	UpdateUser(context.Context, request.UserRequest) (entity.Auth, error)
 }

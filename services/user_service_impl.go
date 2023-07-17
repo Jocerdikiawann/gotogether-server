@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 
+	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/pb"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
 	"github.com/Jocerdikiawann/server_share_trip/repository/design"
@@ -31,6 +32,8 @@ func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager, va
 }
 
 func (s *UserServiceServer) SignUp(context context.Context, input *pb.UserRequest) (*pb.UserResponse, error) {
+	var result entity.Auth
+	var authErr error
 	requestStruct := request.UserRequest{
 		GoogleId: input.GoogleId,
 		Email:    input.Email,
@@ -41,16 +44,23 @@ func (s *UserServiceServer) SignUp(context context.Context, input *pb.UserReques
 		s.Logger.Error(validate.Error())
 		return nil, status.Errorf(codes.InvalidArgument, "Bad request")
 	}
-	result, err := s.Repo.SignUp(context, requestStruct)
 
-	if err != nil {
-		s.Logger.Error(validate.Error())
-		return nil, status.Errorf(codes.Internal, err.Error())
+	isUserAlreadyRegister := s.Repo.CheckIsValidEmail(context, input.Email)
+
+	if isUserAlreadyRegister != nil {
+		result, authErr = s.Repo.SignUp(context, requestStruct)
+	} else {
+		result, authErr = s.Repo.UpdateUser(context, requestStruct)
+	}
+
+	if authErr != nil {
+		s.Logger.Error(authErr.Error())
+		return nil, status.Errorf(codes.Internal, authErr.Error())
 	}
 
 	token, err := s.JWTManager.Generate(input.Email)
 	if err != nil {
-		s.Logger.Error(validate.Error())
+		s.Logger.Error(err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 

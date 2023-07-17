@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type AuthRepositoryImpl struct {
@@ -32,13 +33,31 @@ func (repo *AuthRepositoryImpl) SignUp(context context.Context, request request.
 	return
 }
 
-func (repo *AuthRepositoryImpl) CheckIsValidEmail(ctx context.Context, email string) (bool, error) {
+func (repo *AuthRepositoryImpl) CheckIsValidEmail(ctx context.Context, email string) error {
 	filter := bson.M{
 		"email": email,
 	}
 	err := repo.db.Collection("user").FindOne(ctx, filter)
-	if err != nil {
-		return true, nil
+	return err.Err()
+}
+
+func (repo *AuthRepositoryImpl) UpdateUser(context context.Context, req request.UserRequest) (entity.Auth, error) {
+	var auth entity.Auth
+	filter := bson.M{
+		"email": bson.M{"$eq": req.Email},
 	}
-	return false, err.Err()
+
+	update := bson.M{"$set": req}
+
+	upsert := true
+	after := options.After
+	opt := options.FindOneAndUpdateOptions{
+		ReturnDocument: &after,
+		Upsert:         &upsert,
+	}
+	err := repo.db.Collection("user").FindOneAndUpdate(context, filter, update, &opt).Decode(&auth)
+	if err != nil {
+		return entity.Auth{}, err
+	}
+	return auth, nil
 }

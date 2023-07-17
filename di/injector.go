@@ -33,10 +33,13 @@ var teleSet = wire.NewSet(
 
 func InitializedRouteServiceServer(
 	conf *config.Config,
+	token string,
+	tokenDuration time.Duration,
 ) *services.RouteServiceServer {
 	wire.Build(
 		config.Connect, routeSet, validator.New, services.NewRouteService,
-		utils.NewLogger, teleSet,
+		utils.NewLogger, teleSet, interceptors.NewAuthInterceptor, 
+		utils.NewJWTManager, authSet,
 	)
 	return nil
 }
@@ -47,7 +50,7 @@ func InitializedAuthServiceServer(
 	tokenDuration time.Duration,
 ) *services.UserServiceServer {
 	wire.Build(
-		config.Connect, authSet, validator.New, 
+		config.Connect, authSet, validator.New,
 		services.NewUserService, utils.NewJWTManager,
 		utils.NewLogger, teleSet,
 	)

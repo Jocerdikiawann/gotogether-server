@@ -1,0 +1,3 @@
+[submodule "model/proto"]
+	path = model/proto
+	url = https://github.com/Jocerdikiawann/shared_proto_share_trip
