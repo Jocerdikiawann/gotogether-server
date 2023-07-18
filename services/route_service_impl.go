@@ -52,16 +52,18 @@ func (s *RouteServiceServer) GetDestinationAndPolyline(context context.Context, 
 }
 
 func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context, req *pb.DestintationAndPolylineRequest) (*pb.DestintationAndPolylineResponse, error) {
-	if err := s.Interceptor.Authorize(context); err != nil {
+	claims, err := s.Interceptor.Authorize(context)
+	if err != nil {
 		return nil, status.Errorf(codes.Unauthenticated, "err : %v", err)
 	}
+
 	structRequest := request.DestinationAndPolylineRequest{
-		GoogleId: req.GoogleId,
+		GoogleId: claims.GoogleId,
 		Destination: entity.Point{
 			Latitude:  req.GetDestination().Latitude,
 			Longitude: req.GetDestination().Longitude,
 		},
-		EncodedRoute: req.EncodedRoute,
+		EncodedRoute: req.GetEncodedRoute(),
 	}
 
 	errorValidate := s.Validator.Struct(

@@ -9,7 +9,8 @@ import (
 
 type UserClaims struct {
 	jwt.RegisteredClaims
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	GoogleId string `json:"googleId"`
 }
 
 type JWTManager struct {
@@ -21,12 +22,13 @@ func NewJWTManager(secretKey string, tokenDuration time.Duration) *JWTManager {
 	return &JWTManager{secretKey, tokenDuration}
 }
 
-func (manager *JWTManager) Generate(email string) (string, error) {
+func (manager *JWTManager) Generate(email, googleId string) (string, error) {
 	claims := UserClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(manager.TokenDuration)),
 		},
-		Email: email,
+		Email:    email,
+		GoogleId: googleId,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

@@ -58,7 +58,7 @@ func (s *UserServiceServer) SignUp(context context.Context, input *pb.UserReques
 		return nil, status.Errorf(codes.Internal, authErr.Error())
 	}
 
-	token, err := s.JWTManager.Generate(input.Email)
+	token, err := s.JWTManager.Generate(input.Email,input.GoogleId)
 	if err != nil {
 		s.Logger.Error(err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())

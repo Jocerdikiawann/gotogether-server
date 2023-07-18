@@ -19,8 +19,8 @@
     "application/json"
   ],
   "paths": {
-    "/v1/route/getDestination": {
-      "post": {
+    "/v1/route/getDestination/{id}": {
+      "get": {
         "operationId": "Route_GetDestinationAndPolyline",
         "responses": {
           "200": {
@@ -38,12 +38,10 @@
         },
         "parameters": [
           {
-            "name": "body",
-            "in": "body",
+            "name": "id",
+            "in": "path",
             "required": true,
-            "schema": {
-              "$ref": "#/definitions/pbRouteRequest"
-            }
+            "type": "string"
           }
         ],
         "tags": [
@@ -120,9 +118,6 @@
     "pbDestintationAndPolylineRequest": {
       "type": "object",
       "properties": {
-        "googleId": {
-          "type": "string"
-        },
         "destination": {
           "$ref": "#/definitions/pbPoint"
         },
@@ -173,14 +168,6 @@
         "longitude": {
           "type": "number",
           "format": "double"
-        }
-      }
-    },
-    "pbRouteRequest": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
         }
       }
     },

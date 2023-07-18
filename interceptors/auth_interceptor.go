@@ -21,26 +21,26 @@ func NewAuthInterceptor(jwtManager *utils.JWTManager, repo design.AuthRepository
 	return &AuthInterceptor{JWTManager: jwtManager, Repo: repo, Logger: logger}
 }
 
-func (interceptor *AuthInterceptor) Authorize(ctx context.Context) error {
+func (interceptor *AuthInterceptor) Authorize(ctx context.Context) (*utils.UserClaims, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return status.Error(codes.Unauthenticated, "metadata is not provided")
+		return nil, status.Error(codes.Unauthenticated, "metadata is not provided")
 	}
 
 	values := md["authorization"]
 	if len(values) == 0 {
-		return status.Error(codes.Unauthenticated, "authorization token is not provided")
+		return nil, status.Error(codes.Unauthenticated, "authorization token is not provided")
 	}
 
 	accessToken := values[0]
 	claims, err := interceptor.JWTManager.VerifyAccessToken(accessToken)
 	if err != nil {
-		return status.Error(codes.Unauthenticated, err.Error())
+		return nil, status.Error(codes.Unauthenticated, err.Error())
 	}
 
 	errValid := interceptor.Repo.CheckIsValidEmail(ctx, claims.Email)
 	if errValid != nil {
-		return status.Error(codes.Unauthenticated, errValid.Error())
+		return nil, status.Error(codes.Unauthenticated, errValid.Error())
 	}
-	return nil
+	return claims, nil
 }
