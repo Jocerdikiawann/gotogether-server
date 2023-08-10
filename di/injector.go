@@ -4,64 +4,48 @@
 package di
 
 import (
+	"os"
 	"time"
 
-	"github.com/Jocerdikiawann/server_share_trip/config"
-	"github.com/Jocerdikiawann/server_share_trip/interceptors"
-	"github.com/Jocerdikiawann/server_share_trip/repository"
-	"github.com/Jocerdikiawann/server_share_trip/repository/design"
-	"github.com/Jocerdikiawann/server_share_trip/services"
+	"github.com/Jocerdikiawann/server_share_trip/db"
+	"github.com/Jocerdikiawann/server_share_trip/server"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/wire"
 )
 
-var routeSet = wire.NewSet(
-	repository.NewRouteRepository,
-	wire.Bind(new(design.RouteRepository), new(*repository.RouteRepositoryImpl)),
-)
+func provideDBconfig() *db.Config {
+	return &db.Config{
+		Username: os.Getenv("MONGO_USERNAME"),
+		Password: os.Getenv("MONGO_PASSWORD"),
+		Host:     os.Getenv("MONGO_HOST"),
+		Port:     os.Getenv("MONGO_PORT"),
+		NameDb:   os.Getenv("MONGO_DB_NAME"),
+	}
+}
 
-var authSet = wire.NewSet(
-	repository.NewUserRepository,
-	wire.Bind(new(design.AuthRepository), new(*repository.AuthRepositoryImpl)),
-)
-
-var teleSet = wire.NewSet(
-	repository.NewTelegramRepository,
-	wire.Bind(new(design.TelegramRepository), new(*repository.TelegramRepositoryImpl)),
-)
+func provideSecretKey() string {
+	return os.Getenv("SECRET_KEY")
+}
 
 func InitializedRouteServiceServer(
-	conf *config.Config,
-	token string,
 	tokenDuration time.Duration,
-) *services.RouteServiceServer {
+) *server.RouteServiceServer {
 	wire.Build(
-		config.Connect, routeSet, validator.New, services.NewRouteService,
-		utils.NewLogger, teleSet, interceptors.NewAuthInterceptor, 
-		utils.NewJWTManager, authSet,
+		db.MongoDB, validator.New, server.NewRouteRepository, server.NewUserRepository,
+		server.NewRouteService, utils.NewLogger, utils.NewJWTManager, provideDBconfig, provideSecretKey,
 	)
 	return nil
 }
 
 func InitializedAuthServiceServer(
-	conf *config.Config,
-	token string,
 	tokenDuration time.Duration,
-) *services.UserServiceServer {
+) *server.UserServiceServer {
 	wire.Build(
-		config.Connect, authSet, validator.New,
-		services.NewUserService, utils.NewJWTManager,
-		utils.NewLogger, teleSet,
+		db.MongoDB, validator.New,
+		server.NewUserRepository,
+		server.NewUserService, utils.NewJWTManager,
+		utils.NewLogger, provideDBconfig, provideSecretKey,
 	)
-	return nil
-}
-
-func InitializedAuthInterceptors(
-	conf *config.Config,
-	token string,
-	tokenDuration time.Duration,
-) *interceptors.AuthInterceptor {
-	wire.Build(config.Connect, utils.NewJWTManager, authSet, interceptors.NewAuthInterceptor, utils.NewLogger, teleSet)
 	return nil
 }

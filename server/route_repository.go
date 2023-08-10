@@ -1,4 +1,4 @@
-package repository
+package server
 
 import (
 	"context"
@@ -10,17 +10,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type RouteRepositoryImpl struct {
+type RouteRepository struct {
 	db *mongo.Database
 }
 
-func NewRouteRepository(db *mongo.Database) *RouteRepositoryImpl {
-	return &RouteRepositoryImpl{
+func NewRouteRepository(db *mongo.Database) RouteRepository {
+	return RouteRepository{
 		db: db,
 	}
 }
 
-func (repo *RouteRepositoryImpl) GetDestinationAndPolyline(context context.Context, id string) (entity.Destination, error) {
+func (repo *RouteRepository) GetDestinationAndPolyline(context context.Context, id string) (entity.Destination, error) {
 	var destination entity.Destination
 	objId, err := primitive.ObjectIDFromHex(id)
 	filter := bson.M{
@@ -35,7 +35,7 @@ func (repo *RouteRepositoryImpl) GetDestinationAndPolyline(context context.Conte
 	return destination, errDb
 }
 
-func (repo *RouteRepositoryImpl) SendDestinationAndPolyline(context context.Context, request request.DestinationAndPolylineRequest) (id string, err error) {
+func (repo *RouteRepository) SendDestinationAndPolyline(context context.Context, request request.DestinationAndPolylineRequest) (id string, err error) {
 	result, err := repo.db.Collection("destination").InsertOne(context, request)
 	id = result.InsertedID.(primitive.ObjectID).Hex()
 	return

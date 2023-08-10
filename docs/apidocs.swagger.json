@@ -19,6 +19,38 @@
     "application/json"
   ],
   "paths": {
+    "/v1/auth/signUp": {
+      "post": {
+        "operationId": "Auth_SignUp",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbUserRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/v1/route/getDestination/{id}": {
       "get": {
         "operationId": "Route_GetDestinationAndPolyline",
@@ -80,38 +112,6 @@
           "Route"
         ]
       }
-    },
-    "/v1/route/signUp": {
-      "post": {
-        "operationId": "Auth_SignUp",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "$ref": "#/definitions/pbUserResponse"
-            }
-          },
-          "default": {
-            "description": "An unexpected error response.",
-            "schema": {
-              "$ref": "#/definitions/rpcStatus"
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/pbUserRequest"
-            }
-          }
-        ],
-        "tags": [
-          "Auth"
-        ]
-      }
     }
   },
   "definitions": {
@@ -123,6 +123,9 @@
         },
         "encodedRoute": {
           "type": "string"
+        },
+        "initialLocation": {
+          "$ref": "#/definitions/pbPoint"
         }
       }
     },
@@ -154,6 +157,9 @@
           "type": "string"
         },
         "destination": {
+          "$ref": "#/definitions/pbPoint"
+        },
+        "initialLocation": {
           "$ref": "#/definitions/pbPoint"
         }
       }

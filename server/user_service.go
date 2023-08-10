@@ -1,4 +1,4 @@
-package services
+package server
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	"github.com/Jocerdikiawann/server_share_trip/model/entity"
 	"github.com/Jocerdikiawann/server_share_trip/model/pb"
 	"github.com/Jocerdikiawann/server_share_trip/model/request"
-	"github.com/Jocerdikiawann/server_share_trip/repository/design"
 	"github.com/Jocerdikiawann/server_share_trip/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/sirupsen/logrus"
@@ -15,14 +14,14 @@ import (
 )
 
 type UserServiceServer struct {
-	Repo       design.AuthRepository
+	Repo       AuthRepository
 	JWTManager *utils.JWTManager
 	Validator  *validator.Validate
 	pb.UnimplementedAuthServer
 	Logger *logrus.Logger
 }
 
-func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager, validator *validator.Validate, logrus *logrus.Logger) *UserServiceServer {
+func NewUserService(repo AuthRepository, jwtManager *utils.JWTManager, validator *validator.Validate, logrus *logrus.Logger) *UserServiceServer {
 	return &UserServiceServer{
 		Repo:       repo,
 		JWTManager: jwtManager,
@@ -34,11 +33,13 @@ func NewUserService(repo design.AuthRepository, jwtManager *utils.JWTManager, va
 func (s *UserServiceServer) SignUp(context context.Context, input *pb.UserRequest) (*pb.UserResponse, error) {
 	var result entity.Auth
 	var authErr error
-	requestStruct := request.UserRequest{
+
+	requestStruct := &request.UserRequest{
 		GoogleId: input.GoogleId,
 		Email:    input.Email,
 		Name:     input.Name,
 	}
+
 	validate := s.Validator.Struct(requestStruct)
 	if validate != nil {
 		s.Logger.Error(validate.Error())
@@ -48,9 +49,9 @@ func (s *UserServiceServer) SignUp(context context.Context, input *pb.UserReques
 	isUserAlreadyRegister := s.Repo.CheckIsValidEmail(context, input.Email)
 
 	if isUserAlreadyRegister != nil {
-		result, authErr = s.Repo.SignUp(context, requestStruct)
+		result, authErr = s.Repo.SignUp(context, *requestStruct)
 	} else {
-		result, authErr = s.Repo.UpdateUser(context, requestStruct)
+		result, authErr = s.Repo.UpdateUser(context, *requestStruct)
 	}
 
 	if authErr != nil {
@@ -58,7 +59,7 @@ func (s *UserServiceServer) SignUp(context context.Context, input *pb.UserReques
 		return nil, status.Errorf(codes.Internal, authErr.Error())
 	}
 
-	token, err := s.JWTManager.Generate(input.Email,input.GoogleId)
+	token, err := s.JWTManager.Generate(input.Email, input.GoogleId)
 	if err != nil {
 		s.Logger.Error(err.Error())
 		return nil, status.Errorf(codes.Internal, err.Error())

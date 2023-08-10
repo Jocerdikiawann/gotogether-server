@@ -1,4 +1,4 @@
-package config
+package db
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type Config struct {
 	NameDb   string
 }
 
-func Connect(config *Config) *mongo.Database {
+func MongoDB(config *Config) *mongo.Database {
 	uri := fmt.Sprintf("mongodb://%v:%v", config.Host, config.Port)
 	credential := options.Credential{
 		Username: config.Username,

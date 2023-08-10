@@ -1,12 +1,9 @@
 package request
 
-type LocationRequest struct {
-	GoogleId   string `json:"googleId" validate:"required"`
-	Point      Point  `json:"point" validate:"required"`
-	IsFinish bool   `json:"isFinish" validate:"required"`
-}
+import "github.com/Jocerdikiawann/server_share_trip/model/entity"
 
-type Point struct {
-	Latitude  float64
-	Longitude float64
+type LocationRequest struct {
+	GoogleId string       `json:"googleId" validate:"required"`
+	Point    entity.Point `json:"point" validate:"required"`
+	IsFinish bool         `json:"isFinish" validate:"required"`
 }

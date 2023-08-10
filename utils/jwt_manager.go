@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -42,21 +42,20 @@ func (manager *JWTManager) VerifyAccessToken(accessToken string) (*UserClaims, e
 		func(token *jwt.Token) (interface{}, error) {
 			_, ok := token.Method.(*jwt.SigningMethodHMAC)
 			if !ok {
-				return nil, fmt.Errorf("unexpected token signing method")
+				return nil, errors.New("unexpected token signing method")
 			}
-
 			return []byte(manager.SecretKey), nil
 		},
 	)
 
 	if err != nil {
-		return nil, fmt.Errorf("invalid token : %v", err)
+		return nil, err
 	}
 
 	claims, ok := token.Claims.(*UserClaims)
 
 	if !ok {
-		return nil, fmt.Errorf("invalid token claims")
+		return nil, errors.New("invalid token claims")
 	}
 
 	return claims, nil

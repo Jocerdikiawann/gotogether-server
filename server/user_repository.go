@@ -1,4 +1,4 @@
-package repository
+package server
 
 import (
 	"context"
@@ -11,17 +11,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type AuthRepositoryImpl struct {
+type AuthRepository struct {
 	db *mongo.Database
 }
 
-func NewUserRepository(db *mongo.Database) *AuthRepositoryImpl {
-	return &AuthRepositoryImpl{
+func NewUserRepository(db *mongo.Database) AuthRepository {
+	return AuthRepository{
 		db: db,
 	}
 }
 
-func (repo *AuthRepositoryImpl) SignUp(context context.Context, request request.UserRequest) (data entity.Auth, err error) {
+func (repo *AuthRepository) SignUp(context context.Context, request request.UserRequest) (data entity.Auth, err error) {
 	result, err := repo.db.Collection("user").InsertOne(context, request)
 
 	data = entity.Auth{
@@ -33,7 +33,7 @@ func (repo *AuthRepositoryImpl) SignUp(context context.Context, request request.
 	return
 }
 
-func (repo *AuthRepositoryImpl) CheckIsValidEmail(ctx context.Context, email string) error {
+func (repo *AuthRepository) CheckIsValidEmail(ctx context.Context, email string) error {
 	filter := bson.M{
 		"email": email,
 	}
@@ -41,7 +41,7 @@ func (repo *AuthRepositoryImpl) CheckIsValidEmail(ctx context.Context, email str
 	return err.Err()
 }
 
-func (repo *AuthRepositoryImpl) UpdateUser(context context.Context, req request.UserRequest) (entity.Auth, error) {
+func (repo *AuthRepository) UpdateUser(context context.Context, req request.UserRequest) (entity.Auth, error) {
 	var auth entity.Auth
 	filter := bson.M{
 		"email": bson.M{"$eq": req.Email},
@@ -59,5 +59,6 @@ func (repo *AuthRepositoryImpl) UpdateUser(context context.Context, req request.
 	if err != nil {
 		return entity.Auth{}, err
 	}
+	auth.GoogleId = req.GoogleId
 	return auth, nil
 }

@@ -6,6 +6,7 @@ type Destination struct {
 	Id                primitive.ObjectID `json:"id" bson:"_id"`
 	GoogleId          string             `json:"googleId" bson:"googleId"`
 	DestinationLatLng Point              `json:"destination" bson:"destination,omitempty"`
+	InitialLocation   Point              `json:"initialLocation" bson:"initialLocation,omitempty"`
 	EncodedRoute      string             `json:"encodedRoute" bson:"encodedRoute,omitempty"`
 }
 
