@@ -47,24 +47,30 @@ func NewRouteService(repo RouteRepository, validator *validator.Validate, JWTMan
 }
 
 func (s *RouteServiceServer) GetDestinationAndPolyline(context context.Context, request *pb.RouteRequest) (*pb.DestintationAndPolylineResponse, error) {
+
 	result, err := s.RouteRepo.GetDestinationAndPolyline(context, request.GetId())
 
 	if err != nil {
 		s.Logger.Error(err.Error())
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
-	return &pb.DestintationAndPolylineResponse{
-		StatusCode: int32(codes.OK),
-		Success:    true,
-		Message:    "success get data.",
-		Data: &pb.DestintationAndPolylineType{
-			Id:              result.Id.Hex(),
-			Destination:     &pb.Point{Latitude: result.DestinationLatLng.Latitude, Longitude: result.DestinationLatLng.Longitude},
-			EncodedRoute:    result.EncodedRoute,
-			InitialLocation: &pb.Point{Latitude: result.InitialLocation.Latitude, Longitude: result.InitialLocation.Longitude},
-		},
-	}, nil
+	profile, err := s.UserRepo.GetProfile(context, result.GoogleId)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	} else {
+		return &pb.DestintationAndPolylineResponse{
+			StatusCode: int32(codes.OK),
+			Success:    true,
+			Message:    "success get data.",
+			Data: &pb.DestintationAndPolylineType{
+				Id:              result.Id.Hex(),
+				Destination:     &pb.Point{Latitude: result.DestinationLatLng.Latitude, Longitude: result.DestinationLatLng.Longitude},
+				EncodedRoute:    result.EncodedRoute,
+				InitialLocation: &pb.Point{Latitude: result.InitialLocation.Latitude, Longitude: result.InitialLocation.Longitude},
+				SenderName:      profile.Name,
+			},
+		}, nil
+	}
 }
 
 func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context, req *pb.DestintationAndPolylineRequest) (*pb.DestintationAndPolylineResponse, error) {

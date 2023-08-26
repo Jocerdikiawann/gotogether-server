@@ -59,7 +59,7 @@ func newServer() *http.Server {
 
 func main() {
 	s := newServer()
-	fmt.Printf("Server run on http://%v", s.Addr)
+	fmt.Printf("Server run on %v", s.Addr)
 
 	if servError := s.ListenAndServe(); servError != nil {
 		utils.CheckError(servError)

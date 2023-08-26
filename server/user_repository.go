@@ -33,6 +33,17 @@ func (repo *AuthRepository) SignUp(context context.Context, request request.User
 	return
 }
 
+func (repo *AuthRepository) GetProfile(context context.Context, id string) (entity.Auth, error) {
+	var user entity.Auth
+
+	filter := bson.M{
+		"googleId": id,
+	}
+
+	result := repo.db.Collection("user").FindOne(context, filter).Decode(&user)
+	return user, result
+}
+
 func (repo *AuthRepository) CheckIsValidEmail(ctx context.Context, email string) error {
 	filter := bson.M{
 		"email": email,

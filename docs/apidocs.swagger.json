@@ -161,6 +161,9 @@
         },
         "initialLocation": {
           "$ref": "#/definitions/pbPoint"
+        },
+        "senderName": {
+          "type": "string"
         }
       }
     },

@@ -1,11 +1,13 @@
 ### Server Share Trip
 
 Setup :
+
 ```bash
 touch .env
-nano .env
 ```
+
 set .env :
+
 ```bash
 MONGO_PORT=
 MONGO_PORT_SECOND=
@@ -21,11 +23,13 @@ GROUP_ID=
 ```
 
 Installation :
+
 ```bash
 make gen
 ```
 
 Run :
+
 ```bash
 make build && make run
 ```
