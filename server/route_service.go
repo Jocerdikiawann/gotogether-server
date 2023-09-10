@@ -68,6 +68,9 @@ func (s *RouteServiceServer) GetDestinationAndPolyline(context context.Context, 
 				EncodedRoute:    result.EncodedRoute,
 				InitialLocation: &pb.Point{Latitude: result.InitialLocation.Latitude, Longitude: result.InitialLocation.Longitude},
 				SenderName:      profile.Name,
+				LocationName:    result.LocationName,
+				DestinationName: result.DestinationName,
+				EstimateTime:    result.EstimateTime,
 			},
 		}, nil
 	}
@@ -88,6 +91,11 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 		return nil, status.Error(codes.Unauthenticated, errValid.Error())
 	}
 
+	profile, err := s.UserRepo.GetProfile(context, claims.GoogleId)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, err.Error())
+	}
+
 	structRequest := &request.DestinationAndPolylineRequest{
 		GoogleId: claims.GoogleId,
 		Destination: &entity.Point{
@@ -99,6 +107,9 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 			Latitude:  req.InitialLocation.Latitude,
 			Longitude: req.InitialLocation.Longitude,
 		},
+		EstimateTime:    req.EstimateTime,
+		DestinationName: req.DestinationName,
+		LocationName:    req.LocationName,
 	}
 	errorValidate := s.Validator.Struct(structRequest)
 
@@ -123,6 +134,10 @@ func (s *RouteServiceServer) SendDestinationAndPolyline(context context.Context,
 			Id:              result,
 			EncodedRoute:    req.EncodedRoute,
 			InitialLocation: req.InitialLocation,
+			LocationName:    req.LocationName,
+			DestinationName: req.DestinationName,
+			EstimateTime:    req.EstimateTime,
+			SenderName:      profile.Name,
 		},
 	}, nil
 }

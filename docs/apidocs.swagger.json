@@ -126,6 +126,15 @@
         },
         "initialLocation": {
           "$ref": "#/definitions/pbPoint"
+        },
+        "locationName": {
+          "type": "string"
+        },
+        "destinationName": {
+          "type": "string"
+        },
+        "estimateTime": {
+          "type": "string"
         }
       }
     },
@@ -163,6 +172,15 @@
           "$ref": "#/definitions/pbPoint"
         },
         "senderName": {
+          "type": "string"
+        },
+        "locationName": {
+          "type": "string"
+        },
+        "destinationName": {
+          "type": "string"
+        },
+        "estimateTime": {
           "type": "string"
         }
       }
